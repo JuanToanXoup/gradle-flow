@@ -1,0 +1,267 @@
+/* ==============================================
+   Gradle Flow - Main Application Styles
+   ============================================== */
+
+/* App Layout */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background-color: #f8fafc;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.app-header .subtitle {
+  font-size: 0.875rem;
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.app-main {
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ==============================================
+   Task Graph Canvas
+   ============================================== */
+
+.task-graph-container {
+  display: flex;
+  height: 100%;
+  outline: none;
+}
+
+.canvas-wrapper {
+  flex: 1;
+  position: relative;
+}
+
+/* ==============================================
+   Selection Panel
+   ============================================== */
+
+.selection-panel {
+  width: 280px;
+  padding: 1.25rem;
+  background: white;
+  border-left: 1px solid #e2e8f0;
+  overflow-y: auto;
+}
+
+.selection-panel.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  text-align: center;
+}
+
+.selection-panel.empty p {
+  margin: 0.25rem 0;
+}
+
+.selection-panel.empty .hint {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.selection-panel h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.selection-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.detail-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.detail-row .label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.detail-row .value {
+  font-size: 0.875rem;
+  color: #1e293b;
+}
+
+.selected-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.selected-list li {
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.25rem;
+  background: #f1f5f9;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  color: #334155;
+}
+
+.delete-button {
+  margin-top: 1.5rem;
+  width: 100%;
+  padding: 0.625rem 1rem;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.delete-button:hover {
+  background: #dc2626;
+}
+
+.delete-button:active {
+  background: #b91c1c;
+}
+
+/* ==============================================
+   Gradle Task Node
+   ============================================== */
+
+.gradle-task-node {
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  min-width: 160px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.gradle-task-node:hover {
+  border-color: #94a3b8;
+}
+
+.gradle-task-node.selected {
+  border-width: 2px;
+}
+
+.gradle-task-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.gradle-task-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.gradle-task-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.gradle-task-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gradle-task-type {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+/* ==============================================
+   React Flow Handle Styles
+   ============================================== */
+
+.gradle-handle {
+  width: 10px !important;
+  height: 10px !important;
+  border: 2px solid white !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* ==============================================
+   React Flow Overrides
+   ============================================== */
+
+.react-flow__controls {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.react-flow__controls-button {
+  border: none !important;
+  background: white !important;
+}
+
+.react-flow__controls-button:hover {
+  background: #f1f5f9 !important;
+}
+
+.react-flow__minimap {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.react-flow__edge-path {
+  stroke: #64748b;
+  stroke-width: 2;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: #3b82f6;
+  stroke-width: 2.5;
+}
+
+/* Selection box */
+.react-flow__selection {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid #3b82f6;
+}
