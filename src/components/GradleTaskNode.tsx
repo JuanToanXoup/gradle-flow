@@ -1,0 +1,96 @@
+import { memo } from 'react';
+import { Handle, Position, type NodeProps } from '@xyflow/react';
+import {
+  Terminal,
+  Copy,
+  Trash2,
+  FileArchive,
+  Package,
+  TestTube,
+  Hammer,
+  FolderInput,
+  Puzzle,
+} from 'lucide-react';
+import type { GradleTaskNode as GradleTaskNodeType, GradleTaskType } from '../types/gradle';
+
+/**
+ * Maps Gradle task types to their corresponding icons
+ */
+const taskTypeIcons: Record<GradleTaskType, React.ElementType> = {
+  Exec: Terminal,
+  Copy: Copy,
+  Delete: Trash2,
+  Zip: FileArchive,
+  Jar: Package,
+  Test: TestTube,
+  JavaCompile: Hammer,
+  ProcessResources: FolderInput,
+  Custom: Puzzle,
+};
+
+/**
+ * Maps Gradle task types to their display colors
+ */
+const taskTypeColors: Record<GradleTaskType, string> = {
+  Exec: '#3b82f6',      // blue
+  Copy: '#22c55e',      // green
+  Delete: '#ef4444',    // red
+  Zip: '#f59e0b',       // amber
+  Jar: '#8b5cf6',       // purple
+  Test: '#06b6d4',      // cyan
+  JavaCompile: '#f97316', // orange
+  ProcessResources: '#84cc16', // lime
+  Custom: '#6b7280',    // gray
+};
+
+/**
+ * Custom node component for Gradle tasks
+ */
+function GradleTaskNodeComponent({ data, selected }: NodeProps<GradleTaskNodeType>) {
+  const Icon = taskTypeIcons[data.taskType] || taskTypeIcons.Custom;
+  const color = taskTypeColors[data.taskType] || taskTypeColors.Custom;
+
+  return (
+    <div
+      className={`gradle-task-node ${selected ? 'selected' : ''}`}
+      style={{
+        borderColor: selected ? color : '#e5e7eb',
+        boxShadow: selected ? `0 0 0 2px ${color}40` : 'none',
+      }}
+    >
+      {/* Input handle for dependencies */}
+      <Handle
+        type="target"
+        position={Position.Top}
+        className="gradle-handle"
+        style={{ background: color }}
+      />
+
+      <div className="gradle-task-content">
+        {/* Task type icon */}
+        <div
+          className="gradle-task-icon"
+          style={{ backgroundColor: `${color}20`, color }}
+        >
+          <Icon size={16} />
+        </div>
+
+        {/* Task info */}
+        <div className="gradle-task-info">
+          <div className="gradle-task-name">{data.taskName}</div>
+          <div className="gradle-task-type">{data.taskType}</div>
+        </div>
+      </div>
+
+      {/* Output handle for dependents */}
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        className="gradle-handle"
+        style={{ background: color }}
+      />
+    </div>
+  );
+}
+
+export const GradleTaskNode = memo(GradleTaskNodeComponent);
