@@ -24,6 +24,7 @@ import { GradleDependencyEdge } from './GradleDependencyEdge';
 import { PropertyPanel } from './PropertyPanel';
 import { EdgePropertyPanel } from './EdgePropertyPanel';
 import { NodePalette } from './NodePalette';
+import { VariablesPanel } from './VariablesPanel';
 import { sampleNodes, sampleEdges } from '../data/sampleGraph';
 import { validateConnection } from '../utils/graphUtils';
 import {
@@ -33,7 +34,9 @@ import {
   type GradleEdgeData,
   type AppNode,
   type GradleTaskType,
+  type Variable,
   defaultTaskConfigs,
+  systemVariables,
 } from '../types/gradle';
 
 /**
@@ -111,6 +114,8 @@ function TaskGraphCanvasInner() {
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [, setDraggedTaskType] = useState<GradleTaskType | null>(null);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [variables, setVariables] = useState<Variable[]>([...systemVariables]);
+  const [variablesPanelExpanded, setVariablesPanelExpanded] = useState(true);
 
   // Get the selected nodes from the node list
   const selectedNodes = useMemo(() => {
@@ -433,8 +438,16 @@ function TaskGraphCanvasInner() {
 
   return (
     <div className="task-graph-container" onKeyDown={onKeyDown} tabIndex={0}>
-      {/* Node palette sidebar */}
-      <NodePalette onDragStart={handlePaletteDragStart} />
+      {/* Left sidebar with palette and variables */}
+      <div className="left-sidebar">
+        <NodePalette onDragStart={handlePaletteDragStart} />
+        <VariablesPanel
+          variables={variables}
+          onVariablesChange={setVariables}
+          isExpanded={variablesPanelExpanded}
+          onToggleExpanded={() => setVariablesPanelExpanded((prev) => !prev)}
+        />
+      </div>
 
       {/* Canvas wrapper */}
       <div
@@ -516,6 +529,7 @@ function TaskGraphCanvasInner() {
         <PropertyPanel
           selectedNode={selectedNode}
           allNodes={allGradleNodes}
+          variables={variables}
           onNodeUpdate={handleNodeUpdate}
           onNodeDelete={handleNodeDelete}
         />

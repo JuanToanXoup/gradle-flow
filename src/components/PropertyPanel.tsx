@@ -4,15 +4,16 @@ import {
   TextInput,
   Checkbox,
   Select,
-  PathInput,
   ListEditor,
   KeyValueEditor,
   NodePicker,
+  VariableInput,
 } from './config';
 import {
   type GradleTaskNode,
   type GradleTaskNodeData,
   type PropertyFieldDef,
+  type Variable,
   taskPropertySchemas,
   commonPropertyFields,
 } from '../types/gradle';
@@ -20,6 +21,7 @@ import {
 interface PropertyPanelProps {
   selectedNode: GradleTaskNode | null;
   allNodes: GradleTaskNode[];
+  variables: Variable[];
   onNodeUpdate: (nodeId: string, updates: Partial<GradleTaskNodeData>) => void;
   onNodeDelete: (nodeId: string) => void;
 }
@@ -27,6 +29,7 @@ interface PropertyPanelProps {
 export function PropertyPanel({
   selectedNode,
   allNodes,
+  variables,
   onNodeUpdate,
   onNodeDelete,
 }: PropertyPanelProps) {
@@ -96,9 +99,24 @@ export function PropertyPanel({
       const value = getFieldValue(field.name, isConfig);
       const error = getFieldError(field.name);
 
+      // Use VariableInput for text fields that support variable references
+      const supportsVariables = ['text', 'file', 'directory'].includes(field.type);
+
       switch (field.type) {
         case 'text':
-          return (
+          return supportsVariables && field.name !== 'taskName' ? (
+            <VariableInput
+              key={field.name}
+              label={field.label}
+              value={(value as string) || ''}
+              onChange={(v) => handleFieldChange(field.name, v, isConfig)}
+              variables={variables}
+              placeholder={field.placeholder}
+              required={field.required}
+              error={error}
+              helperText={field.helperText}
+            />
+          ) : (
             <TextInput
               key={field.name}
               label={field.label}
@@ -157,16 +175,16 @@ export function PropertyPanel({
         case 'file':
         case 'directory':
           return (
-            <PathInput
+            <VariableInput
               key={field.name}
               label={field.label}
               value={(value as string) || ''}
               onChange={(v) => handleFieldChange(field.name, v, isConfig)}
-              type={field.type}
+              variables={variables}
               placeholder={field.placeholder}
               required={field.required}
               error={error}
-              helperText={field.helperText}
+              helperText={field.helperText || `Supports variables like \${buildDir}`}
             />
           );
 
@@ -216,7 +234,7 @@ export function PropertyPanel({
           return null;
       }
     },
-    [getFieldValue, getFieldError, handleFieldChange, availableNodes, selectedNode]
+    [getFieldValue, getFieldError, handleFieldChange, availableNodes, selectedNode, variables]
   );
 
   // Empty state
