@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Settings, AlertTriangle } from 'lucide-react';
 import {
   TextInput,
@@ -9,11 +9,13 @@ import {
   NodePicker,
   VariableInput,
 } from './config';
+import { ConditionBuilder } from './ConditionBuilder';
 import {
   type GradleTaskNode,
   type GradleTaskNodeData,
   type PropertyFieldDef,
   type Variable,
+  type TaskCondition,
   taskPropertySchemas,
   commonPropertyFields,
 } from '../types/gradle';
@@ -33,11 +35,22 @@ export function PropertyPanel({
   onNodeUpdate,
   onNodeDelete,
 }: PropertyPanelProps) {
+  const [conditionExpanded, setConditionExpanded] = useState(false);
+
   // Get the property schema for the selected node's task type
   const taskSchema = useMemo(() => {
     if (!selectedNode) return [];
     return taskPropertySchemas[selectedNode.data.taskType] || [];
   }, [selectedNode]);
+
+  // Handle condition changes
+  const handleConditionChange = useCallback(
+    (condition: TaskCondition | undefined) => {
+      if (!selectedNode) return;
+      onNodeUpdate(selectedNode.id, { condition });
+    },
+    [selectedNode, onNodeUpdate]
+  );
 
   // Get available nodes for the node picker (excluding the selected node)
   const availableNodes = useMemo(() => {
@@ -286,6 +299,17 @@ export function PropertyPanel({
         <div className="property-section">
           <h3 className="section-title">Dependencies</h3>
           {renderField(commonPropertyFields.find((f) => f.name === 'dependsOn')!)}
+        </div>
+
+        {/* Conditional execution section */}
+        <div className="property-section">
+          <ConditionBuilder
+            condition={selectedNode.data.condition}
+            onChange={handleConditionChange}
+            variables={variables}
+            isExpanded={conditionExpanded}
+            onToggleExpanded={() => setConditionExpanded((prev) => !prev)}
+          />
         </div>
       </div>
 

@@ -34,6 +34,7 @@ import {
   simulateTaskExecution,
   createLogEntry,
 } from '../utils/executionUtils';
+import { shouldExecuteTask } from '../utils/conditionUtils';
 import {
   type GradleTaskNode as GradleTaskNodeType,
   type GradleTaskNodeData,
@@ -481,6 +482,31 @@ function TaskGraphCanvasInner() {
         const node = allGradleNodes.find((n) => n.id === taskId);
         if (!node) continue;
 
+        // Check if task should be executed based on conditions
+        const conditionResult = shouldExecuteTask(node.data.condition, variables);
+        if (!conditionResult.execute) {
+          // Skip this task due to condition
+          updateNodeExecutionStatus(taskId, 'skipped');
+          setExecutionState((prev) => ({
+            ...prev,
+            taskResults: new Map(prev.taskResults).set(taskId, {
+              taskId,
+              taskName: node.data.taskName,
+              status: 'skipped',
+            }),
+            logs: [
+              ...prev.logs,
+              createLogEntry(
+                'warn',
+                `Skipping task: ${node.data.taskName} - ${conditionResult.reason}`,
+                taskId,
+                node.data.taskName
+              ),
+            ],
+          }));
+          continue;
+        }
+
         // Update status to running
         updateNodeExecutionStatus(taskId, 'running');
         setExecutionState((prev) => ({
@@ -568,7 +594,7 @@ function TaskGraphCanvasInner() {
 
       abortControllerRef.current = null;
     },
-    [allGradleNodes, edges, updateNodeExecutionStatus]
+    [allGradleNodes, edges, updateNodeExecutionStatus, variables]
   );
 
   /**
