@@ -21,6 +21,8 @@ class GradleFlowSettings : PersistentStateComponent<GradleFlowSettings.State> {
     data class State(
         var autoSync: Boolean = false,
         var showNotifications: Boolean = true,
+        var showExecutionLogs: Boolean = true,
+        var enableAnimations: Boolean = true,
         var darkMode: Boolean = true,
         var devServerUrl: String = "http://localhost:5173"
     )
@@ -40,6 +42,14 @@ class GradleFlowSettings : PersistentStateComponent<GradleFlowSettings.State> {
     var showNotifications: Boolean
         get() = state.showNotifications
         set(value) { state.showNotifications = value }
+
+    var showExecutionLogs: Boolean
+        get() = state.showExecutionLogs
+        set(value) { state.showExecutionLogs = value }
+
+    var enableAnimations: Boolean
+        get() = state.enableAnimations
+        set(value) { state.enableAnimations = value }
 
     var darkMode: Boolean
         get() = state.darkMode

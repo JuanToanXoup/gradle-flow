@@ -43,6 +43,8 @@ class GradleFlowBridge(
         createQueryHandlers()
         injectJavaScriptAPI()
         setupExecutionListener()
+        // Register this bridge with the service
+        service.setBridge(this)
     }
 
     /**
@@ -331,6 +333,51 @@ class GradleFlowBridge(
             log.error("Error getting available tasks", e)
             JBCefJSQuery.Response(null, 1, e.message ?: "Unknown error")
         }
+    }
+
+    /**
+     * Send a message to the React UI
+     */
+    fun sendToUI(action: String, data: Map<String, Any>) {
+        val payload = mapOf("action" to action, "data" to data)
+        val json = gson.toJson(payload)
+        val js = """
+            if (window.gradleFlow && window.gradleFlow._handleMessage) {
+                window.gradleFlow._handleMessage($json);
+            } else {
+                console.log('Gradle Flow message received:', $json);
+                // Store for later processing if UI isn't ready yet
+                window._pendingGradleFlowMessages = window._pendingGradleFlowMessages || [];
+                window._pendingGradleFlowMessages.push($json);
+            }
+        """.trimIndent()
+        browser.cefBrowser.executeJavaScript(js, "", 0)
+    }
+
+    // Callback for export requests
+    private var exportCallback: ((String) -> Unit)? = null
+
+    /**
+     * Request the exported Gradle content from the UI
+     */
+    fun requestExportedGradle(callback: (String) -> Unit) {
+        exportCallback = callback
+        val js = """
+            if (window.gradleFlow && window.gradleFlow._getExportedGradle) {
+                var content = window.gradleFlow._getExportedGradle();
+                // This would need a callback mechanism to send back to Kotlin
+                // For now, we'll use a simpler approach via the bridge
+            }
+        """.trimIndent()
+        browser.cefBrowser.executeJavaScript(js, "", 0)
+    }
+
+    /**
+     * Called from JS when export content is ready
+     */
+    fun onExportReady(content: String) {
+        exportCallback?.invoke(content)
+        exportCallback = null
     }
 
     /**

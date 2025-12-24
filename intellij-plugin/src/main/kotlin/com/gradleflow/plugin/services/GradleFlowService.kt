@@ -229,6 +229,35 @@ class GradleFlowService(private val project: Project) {
         )
     }
 
+    // Bridge reference for communicating with React UI
+    private var bridge: com.gradleflow.plugin.bridge.GradleFlowBridge? = null
+
+    /**
+     * Set the bridge for JS-Kotlin communication
+     */
+    fun setBridge(bridge: com.gradleflow.plugin.bridge.GradleFlowBridge) {
+        this.bridge = bridge
+    }
+
+    /**
+     * Sync the visual editor from a build file content
+     */
+    fun syncFromFile(content: String, filePath: String) {
+        log.info("Syncing from file: $filePath")
+        bridge?.sendToUI("importGradle", mapOf(
+            "content" to content,
+            "filePath" to filePath
+        ))
+    }
+
+    /**
+     * Request the exported Gradle content from the React UI
+     */
+    fun requestExportedGradle(callback: (String) -> Unit) {
+        log.info("Requesting exported Gradle content")
+        bridge?.requestExportedGradle(callback)
+    }
+
     /**
      * Read the build.gradle.kts file content
      */
