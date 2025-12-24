@@ -10,12 +10,14 @@ import {
   VariableInput,
 } from './config';
 import { ConditionBuilder } from './ConditionBuilder';
+import { TriggerBuilder } from './TriggerBuilder';
 import {
   type GradleTaskNode,
   type GradleTaskNodeData,
   type PropertyFieldDef,
   type Variable,
   type TaskCondition,
+  type TaskTrigger,
   taskPropertySchemas,
   commonPropertyFields,
 } from '../types/gradle';
@@ -36,6 +38,7 @@ export function PropertyPanel({
   onNodeDelete,
 }: PropertyPanelProps) {
   const [conditionExpanded, setConditionExpanded] = useState(false);
+  const [triggerExpanded, setTriggerExpanded] = useState(false);
 
   // Get the property schema for the selected node's task type
   const taskSchema = useMemo(() => {
@@ -48,6 +51,15 @@ export function PropertyPanel({
     (condition: TaskCondition | undefined) => {
       if (!selectedNode) return;
       onNodeUpdate(selectedNode.id, { condition });
+    },
+    [selectedNode, onNodeUpdate]
+  );
+
+  // Handle trigger changes
+  const handleTriggerChange = useCallback(
+    (trigger: TaskTrigger | undefined) => {
+      if (!selectedNode) return;
+      onNodeUpdate(selectedNode.id, { trigger });
     },
     [selectedNode, onNodeUpdate]
   );
@@ -309,6 +321,16 @@ export function PropertyPanel({
             variables={variables}
             isExpanded={conditionExpanded}
             onToggleExpanded={() => setConditionExpanded((prev) => !prev)}
+          />
+        </div>
+
+        {/* Trigger section */}
+        <div className="property-section">
+          <TriggerBuilder
+            trigger={selectedNode.data.trigger}
+            onChange={handleTriggerChange}
+            isExpanded={triggerExpanded}
+            onToggleExpanded={() => setTriggerExpanded((prev) => !prev)}
           />
         </div>
       </div>

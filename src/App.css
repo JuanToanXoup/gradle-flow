@@ -1759,17 +1759,32 @@
   }
 }
 
-.gradle-task-condition {
+.gradle-task-badges {
+  display: flex;
+  gap: 3px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.gradle-task-badge {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2px 4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+}
+
+.gradle-task-badge.condition {
   background: #eff6ff;
   border: 1px solid #bfdbfe;
-  border-radius: 4px;
   color: #3b82f6;
-  margin-left: auto;
-  flex-shrink: 0;
+}
+
+.gradle-task-badge.trigger {
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  color: #d97706;
 }
 
 .gradle-task-status {
@@ -2112,4 +2127,310 @@
 
 .condition-hint li strong {
   color: #1e293b;
+}
+
+/* ===================================
+   Trigger Builder Styles
+   =================================== */
+
+.trigger-builder {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.trigger-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1e293b;
+  text-align: left;
+}
+
+.trigger-header:hover {
+  background: #f1f5f9;
+}
+
+.trigger-title {
+  flex: 1;
+}
+
+.trigger-type-badge {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.trigger-content {
+  padding: 12px;
+  border-top: 1px solid #e2e8f0;
+  background: white;
+}
+
+/* Trigger type selector */
+.trigger-type-selector {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.trigger-type-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.trigger-type-option:hover {
+  border-color: #3b82f6;
+}
+
+.trigger-type-option.active {
+  background: #eff6ff;
+  border-color: #3b82f6;
+}
+
+.trigger-type-option input[type="radio"] {
+  margin: 2px 0 0 0;
+}
+
+.trigger-type-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.trigger-type-label {
+  font-weight: 500;
+  color: #1e293b;
+  font-size: 13px;
+}
+
+.trigger-type-desc {
+  font-size: 11px;
+  color: #64748b;
+}
+
+/* Trigger configuration */
+.trigger-config {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.trigger-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.trigger-field > label:first-child {
+  font-size: 12px;
+  font-weight: 500;
+  color: #475569;
+}
+
+.trigger-field input[type="text"],
+.trigger-field input[type="number"],
+.trigger-field input[type="password"],
+.trigger-field select {
+  padding: 8px 10px;
+  font-size: 13px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  background: white;
+  color: #1e293b;
+}
+
+.trigger-field input:focus,
+.trigger-field select:focus {
+  border-color: #3b82f6;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.trigger-field input.error {
+  border-color: #ef4444;
+}
+
+.trigger-field-row {
+  display: flex;
+  gap: 12px;
+}
+
+.trigger-field-row .trigger-field {
+  flex: 1;
+}
+
+.trigger-hint {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.trigger-error {
+  font-size: 11px;
+  color: #ef4444;
+}
+
+/* Trigger list (directories, patterns) */
+.trigger-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.trigger-list-item {
+  display: flex;
+  gap: 6px;
+}
+
+.trigger-list-item input {
+  flex: 1;
+  padding: 6px 8px;
+  font-size: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+}
+
+.trigger-list-item input:focus {
+  border-color: #3b82f6;
+  outline: none;
+}
+
+.trigger-list-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.trigger-list-remove:hover {
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #ef4444;
+}
+
+.trigger-list-add {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  font-size: 12px;
+  background: #f1f5f9;
+  border: 1px dashed #cbd5e1;
+  border-radius: 4px;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.trigger-list-add:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+  color: #475569;
+}
+
+/* Trigger checkboxes */
+.trigger-checkboxes {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.trigger-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #475569;
+  cursor: pointer;
+}
+
+.trigger-checkbox input[type="checkbox"] {
+  margin: 0;
+}
+
+/* Trigger presets */
+.trigger-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.trigger-preset {
+  padding: 4px 10px;
+  font-size: 11px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.trigger-preset:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+}
+
+.trigger-preset.active {
+  background: #eff6ff;
+  border-color: #3b82f6;
+  color: #1d4ed8;
+}
+
+/* Manual trigger info */
+.trigger-manual-info {
+  padding: 16px;
+  text-align: center;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.trigger-manual-info p {
+  margin: 0;
+}
+
+/* Trigger summary */
+.trigger-summary {
+  padding: 10px 12px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #166534;
+}
+
+.trigger-summary strong {
+  color: #15803d;
 }

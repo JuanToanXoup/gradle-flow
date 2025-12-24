@@ -17,6 +17,8 @@ import {
   Clock,
   SkipForward,
   GitBranch,
+  Eye,
+  Webhook,
 } from 'lucide-react';
 import type {
   GradleTaskNode as GradleTaskNodeType,
@@ -78,6 +80,7 @@ function GradleTaskNodeComponent({ data, selected }: NodeProps<GradleTaskNodeTyp
   const statusColor = executionStatusColors[executionStatus];
   const isDisabled = data.enabled === false;
   const hasCondition = data.condition && data.condition.conditions.length > 0;
+  const hasTrigger = data.trigger && data.trigger.type !== 'manual';
 
   // Determine border color based on execution status
   const borderColor =
@@ -123,13 +126,29 @@ function GradleTaskNodeComponent({ data, selected }: NodeProps<GradleTaskNodeTyp
           <div className="gradle-task-type">{data.taskType}</div>
         </div>
 
-        {/* Condition indicator */}
-        {hasCondition && executionStatus === 'idle' && (
-          <div
-            className="gradle-task-condition"
-            title={`${data.condition?.type === 'skipIf' ? 'Skip if' : 'Only if'} condition set`}
-          >
-            <GitBranch size={12} />
+        {/* Badges container */}
+        {(hasCondition || hasTrigger) && executionStatus === 'idle' && (
+          <div className="gradle-task-badges">
+            {/* Condition indicator */}
+            {hasCondition && (
+              <div
+                className="gradle-task-badge condition"
+                title={`${data.condition?.type === 'skipIf' ? 'Skip if' : 'Only if'} condition set`}
+              >
+                <GitBranch size={10} />
+              </div>
+            )}
+            {/* Trigger indicator */}
+            {hasTrigger && (
+              <div
+                className="gradle-task-badge trigger"
+                title={`${data.trigger?.type === 'fileWatch' ? 'File watch' : data.trigger?.type === 'schedule' ? 'Scheduled' : 'Webhook'} trigger`}
+              >
+                {data.trigger?.type === 'fileWatch' && <Eye size={10} />}
+                {data.trigger?.type === 'schedule' && <Clock size={10} />}
+                {data.trigger?.type === 'webhook' && <Webhook size={10} />}
+              </div>
+            )}
           </div>
         )}
 

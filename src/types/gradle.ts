@@ -182,6 +182,78 @@ export interface TaskCondition {
 }
 
 /**
+ * Trigger types for automatic task execution
+ */
+export type TriggerType =
+  | 'manual'      // Default - triggered by user
+  | 'fileWatch'   // Triggered when files change
+  | 'schedule'    // Triggered on a schedule (cron-like)
+  | 'webhook';    // Triggered by external webhook/event
+
+/**
+ * File watch trigger configuration
+ */
+export interface FileWatchTrigger {
+  type: 'fileWatch';
+  /** Glob patterns to watch */
+  patterns: string[];
+  /** Directories to watch (relative to project root) */
+  directories: string[];
+  /** Whether to include subdirectories */
+  recursive: boolean;
+  /** Debounce time in milliseconds */
+  debounceMs: number;
+  /** Watch for specific events */
+  events: ('create' | 'modify' | 'delete')[];
+}
+
+/**
+ * Schedule trigger configuration (cron-like)
+ */
+export interface ScheduleTrigger {
+  type: 'schedule';
+  /** Cron expression (e.g., "0 * * * *" for every hour) */
+  cron: string;
+  /** Human-readable description */
+  description?: string;
+  /** Timezone for the schedule */
+  timezone: string;
+  /** Whether the schedule is active */
+  enabled: boolean;
+}
+
+/**
+ * Webhook trigger configuration
+ */
+export interface WebhookTrigger {
+  type: 'webhook';
+  /** Endpoint path for the webhook */
+  endpoint: string;
+  /** HTTP methods to accept */
+  methods: ('GET' | 'POST' | 'PUT')[];
+  /** Required headers for authentication */
+  requiredHeaders?: Record<string, string>;
+  /** Secret for webhook validation */
+  secret?: string;
+}
+
+/**
+ * Manual trigger (default - no configuration needed)
+ */
+export interface ManualTrigger {
+  type: 'manual';
+}
+
+/**
+ * Union type for all trigger configurations
+ */
+export type TaskTrigger =
+  | ManualTrigger
+  | FileWatchTrigger
+  | ScheduleTrigger
+  | WebhookTrigger;
+
+/**
  * Gradle task types supported by the visual editor
  */
 export type GradleTaskType =
@@ -350,6 +422,8 @@ export interface GradleTaskNodeData extends Record<string, unknown> {
   dependsOn?: string[];
   /** Conditional execution settings (onlyIf/skipIf) */
   condition?: TaskCondition;
+  /** Trigger configuration for automatic execution */
+  trigger?: TaskTrigger;
   /** Validation errors */
   errors?: ValidationError[];
 }
