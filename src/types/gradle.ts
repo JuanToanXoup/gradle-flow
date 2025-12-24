@@ -51,6 +51,64 @@ export interface ExecutionLogEntry {
 }
 
 /**
+ * Execution history entry for storing past runs
+ */
+export interface ExecutionHistoryEntry {
+  /** Unique identifier for this execution */
+  id: string;
+  /** When the execution started */
+  startTime: number;
+  /** When the execution ended */
+  endTime: number;
+  /** Total duration in milliseconds */
+  duration: number;
+  /** Overall execution status */
+  status: 'success' | 'failed' | 'partial' | 'cancelled';
+  /** Total number of tasks executed */
+  totalTasks: number;
+  /** Number of successful tasks */
+  successCount: number;
+  /** Number of failed tasks */
+  failedCount: number;
+  /** Number of skipped tasks */
+  skippedCount: number;
+  /** Results for each task (compact format for storage) */
+  taskResults: ExecutionHistoryTaskResult[];
+  /** Execution logs (limited for storage) */
+  logs: ExecutionLogEntry[];
+  /** Optional label/name for this execution */
+  label?: string;
+}
+
+/**
+ * Compact task result for history storage
+ */
+export interface ExecutionHistoryTaskResult {
+  taskId: string;
+  taskName: string;
+  taskType: GradleTaskType;
+  status: TaskExecutionStatus;
+  duration?: number;
+  error?: string;
+}
+
+/**
+ * Summary statistics for execution history
+ */
+export interface ExecutionHistoryStats {
+  /** Total number of executions */
+  totalExecutions: number;
+  /** Number of successful executions */
+  successfulExecutions: number;
+  /** Number of failed executions */
+  failedExecutions: number;
+  /** Average execution duration */
+  averageDuration: number;
+  /** Most recent execution timestamp */
+  lastExecutionTime?: number;
+}
+
+/**
  * Variable types for parameterizing task configurations
  */
 export type VariableType = 'string' | 'number' | 'boolean' | 'path' | 'list';

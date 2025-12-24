@@ -35,6 +35,8 @@ import {
   createLogEntry,
 } from '../utils/executionUtils';
 import { shouldExecuteTask } from '../utils/conditionUtils';
+import { createHistoryEntry, addHistoryEntry } from '../utils/historyUtils';
+import { HistoryPanel } from './HistoryPanel';
 import {
   type GradleTaskNode as GradleTaskNodeType,
   type GradleTaskNodeData,
@@ -130,6 +132,7 @@ function TaskGraphCanvasInner() {
     createInitialExecutionState()
   );
   const [executionPanelExpanded, setExecutionPanelExpanded] = useState(true);
+  const [historyPanelExpanded, setHistoryPanelExpanded] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // Get the selected nodes from the node list
@@ -583,14 +586,23 @@ function TaskGraphCanvasInner() {
       }
 
       // Mark execution as complete
-      setExecutionState((prev) => ({
-        ...prev,
-        isRunning: false,
-        isPaused: false,
-        endTime: Date.now(),
-        currentTaskId: undefined,
-        logs: [...prev.logs, createLogEntry('info', 'Execution finished')],
-      }));
+      const endTime = Date.now();
+      setExecutionState((prev) => {
+        const finalState = {
+          ...prev,
+          isRunning: false,
+          isPaused: false,
+          endTime,
+          currentTaskId: undefined,
+          logs: [...prev.logs, createLogEntry('info', 'Execution finished')],
+        };
+
+        // Record to history
+        const historyEntry = createHistoryEntry(finalState, allGradleNodes);
+        addHistoryEntry(historyEntry);
+
+        return finalState;
+      });
 
       abortControllerRef.current = null;
     },
@@ -754,6 +766,10 @@ function TaskGraphCanvasInner() {
           onReset={handleReset}
           isExpanded={executionPanelExpanded}
           onToggleExpanded={() => setExecutionPanelExpanded((prev) => !prev)}
+        />
+        <HistoryPanel
+          isExpanded={historyPanelExpanded}
+          onToggleExpanded={() => setHistoryPanelExpanded((prev) => !prev)}
         />
       </div>
 
