@@ -2,6 +2,7 @@ import type { GradleTaskNode, GradleEdge } from '../types/gradle';
 
 /**
  * Sample nodes representing a typical Gradle build task graph
+ * with configuration examples demonstrating Phase 2 features
  */
 export const sampleNodes: GradleTaskNode[] = [
   {
@@ -13,6 +14,11 @@ export const sampleNodes: GradleTaskNode[] = [
       taskType: 'Delete',
       group: 'build',
       description: 'Deletes the build directory',
+      enabled: true,
+      config: {
+        delete: ['build', '.gradle'],
+        followSymlinks: false,
+      },
     },
   },
   {
@@ -24,6 +30,15 @@ export const sampleNodes: GradleTaskNode[] = [
       taskType: 'JavaCompile',
       group: 'build',
       description: 'Compiles main Java source',
+      enabled: true,
+      config: {
+        sourceCompatibility: '17',
+        targetCompatibility: '17',
+        encoding: 'UTF-8',
+        compilerArgs: ['-Xlint:deprecation', '-Xlint:unchecked'],
+        deprecation: true,
+        warnings: true,
+      },
     },
   },
   {
@@ -35,6 +50,13 @@ export const sampleNodes: GradleTaskNode[] = [
       taskType: 'ProcessResources',
       group: 'build',
       description: 'Processes main resources',
+      enabled: true,
+      config: {
+        from: ['src/main/resources'],
+        into: 'build/resources/main',
+        include: ['**/*.properties', '**/*.xml', '**/*.json'],
+        duplicatesStrategy: 'EXCLUDE',
+      },
     },
   },
   {
@@ -46,6 +68,8 @@ export const sampleNodes: GradleTaskNode[] = [
       taskType: 'Custom',
       group: 'build',
       description: 'Assembles main classes',
+      enabled: true,
+      dependsOn: ['compileJava', 'processResources'],
     },
   },
   {
@@ -57,6 +81,11 @@ export const sampleNodes: GradleTaskNode[] = [
       taskType: 'JavaCompile',
       group: 'build',
       description: 'Compiles test Java source',
+      enabled: true,
+      config: {
+        sourceCompatibility: '17',
+        targetCompatibility: '17',
+      },
     },
   },
   {
@@ -68,6 +97,7 @@ export const sampleNodes: GradleTaskNode[] = [
       taskType: 'ProcessResources',
       group: 'build',
       description: 'Processes test resources',
+      enabled: true,
     },
   },
   {
@@ -79,6 +109,7 @@ export const sampleNodes: GradleTaskNode[] = [
       taskType: 'Custom',
       group: 'build',
       description: 'Assembles test classes',
+      enabled: true,
     },
   },
   {
@@ -90,6 +121,16 @@ export const sampleNodes: GradleTaskNode[] = [
       taskType: 'Test',
       group: 'verification',
       description: 'Runs the unit tests',
+      enabled: true,
+      timeout: 30,
+      config: {
+        include: ['**/*Test.class', '**/*Tests.class'],
+        exclude: ['**/*IntegrationTest.class'],
+        maxParallelForks: 4,
+        failFast: false,
+        ignoreFailures: false,
+        jvmArgs: ['-Xmx512m', '-XX:+UseG1GC'],
+      },
     },
   },
   {
@@ -101,6 +142,12 @@ export const sampleNodes: GradleTaskNode[] = [
       taskType: 'Jar',
       group: 'build',
       description: 'Assembles a jar archive',
+      enabled: true,
+      config: {
+        archiveFileName: 'myapp.jar',
+        destinationDirectory: 'build/libs',
+        duplicatesStrategy: 'EXCLUDE',
+      },
     },
   },
   {
@@ -112,6 +159,7 @@ export const sampleNodes: GradleTaskNode[] = [
       taskType: 'Custom',
       group: 'build',
       description: 'Assembles the outputs of this project',
+      enabled: true,
     },
   },
   {
@@ -123,6 +171,7 @@ export const sampleNodes: GradleTaskNode[] = [
       taskType: 'Custom',
       group: 'verification',
       description: 'Runs all checks',
+      enabled: true,
     },
   },
   {
@@ -134,6 +183,7 @@ export const sampleNodes: GradleTaskNode[] = [
       taskType: 'Custom',
       group: 'build',
       description: 'Assembles and tests this project',
+      enabled: true,
     },
   },
   {
@@ -145,6 +195,17 @@ export const sampleNodes: GradleTaskNode[] = [
       taskType: 'Exec',
       group: 'application',
       description: 'Runs a shell script',
+      enabled: true,
+      config: {
+        commandLine: ['bash', 'scripts/deploy.sh'],
+        workingDir: './scripts',
+        args: ['--verbose', '--force'],
+        environment: {
+          NODE_ENV: 'production',
+          DEBUG: 'false',
+        },
+        ignoreExitValue: false,
+      },
     },
   },
   {
@@ -156,6 +217,16 @@ export const sampleNodes: GradleTaskNode[] = [
       taskType: 'Zip',
       group: 'distribution',
       description: 'Creates distribution archive',
+      enabled: true,
+      config: {
+        from: ['build/libs', 'docs', 'README.md'],
+        archiveFileName: 'myapp-dist.zip',
+        destinationDirectory: 'build/distributions',
+        include: ['**/*'],
+        exclude: ['**/*.log', '**/.DS_Store'],
+        duplicatesStrategy: 'WARN',
+        preserveFileTimestamps: true,
+      },
     },
   },
   {
@@ -167,6 +238,15 @@ export const sampleNodes: GradleTaskNode[] = [
       taskType: 'Copy',
       group: 'build',
       description: 'Copies static assets',
+      enabled: true,
+      config: {
+        from: ['src/main/assets', 'src/main/static'],
+        into: 'build/assets',
+        include: ['**/*.css', '**/*.js', '**/*.html', '**/*.png', '**/*.jpg'],
+        exclude: ['**/*.map', '**/*.min.*'],
+        duplicatesStrategy: 'EXCLUDE',
+        preserveFileTimestamps: false,
+      },
     },
   },
 ];
@@ -175,126 +255,108 @@ export const sampleNodes: GradleTaskNode[] = [
  * Sample edges representing task dependencies (dependsOn relationships)
  */
 export const sampleEdges: GradleEdge[] = [
-  // clean -> compileJava (compile depends on clean completing first)
   {
     id: 'clean-compileJava',
     source: 'clean',
     target: 'compileJava',
     data: { dependencyType: 'dependsOn' },
   },
-  // clean -> processResources
   {
     id: 'clean-processResources',
     source: 'clean',
     target: 'processResources',
     data: { dependencyType: 'dependsOn' },
   },
-  // compileJava -> classes
   {
     id: 'compileJava-classes',
     source: 'compileJava',
     target: 'classes',
     data: { dependencyType: 'dependsOn' },
   },
-  // processResources -> classes
   {
     id: 'processResources-classes',
     source: 'processResources',
     target: 'classes',
     data: { dependencyType: 'dependsOn' },
   },
-  // classes -> compileTestJava
   {
     id: 'classes-compileTestJava',
     source: 'classes',
     target: 'compileTestJava',
     data: { dependencyType: 'dependsOn' },
   },
-  // classes -> processTestResources
   {
     id: 'classes-processTestResources',
     source: 'classes',
     target: 'processTestResources',
     data: { dependencyType: 'dependsOn' },
   },
-  // compileTestJava -> testClasses
   {
     id: 'compileTestJava-testClasses',
     source: 'compileTestJava',
     target: 'testClasses',
     data: { dependencyType: 'dependsOn' },
   },
-  // processTestResources -> testClasses
   {
     id: 'processTestResources-testClasses',
     source: 'processTestResources',
     target: 'testClasses',
     data: { dependencyType: 'dependsOn' },
   },
-  // testClasses -> test
   {
     id: 'testClasses-test',
     source: 'testClasses',
     target: 'test',
     data: { dependencyType: 'dependsOn' },
   },
-  // classes -> jar
   {
     id: 'classes-jar',
     source: 'classes',
     target: 'jar',
     data: { dependencyType: 'dependsOn' },
   },
-  // jar -> assemble
   {
     id: 'jar-assemble',
     source: 'jar',
     target: 'assemble',
     data: { dependencyType: 'dependsOn' },
   },
-  // test -> check
   {
     id: 'test-check',
     source: 'test',
     target: 'check',
     data: { dependencyType: 'dependsOn' },
   },
-  // assemble -> build
   {
     id: 'assemble-build',
     source: 'assemble',
     target: 'build',
     data: { dependencyType: 'dependsOn' },
   },
-  // check -> build
   {
     id: 'check-build',
     source: 'check',
     target: 'build',
     data: { dependencyType: 'dependsOn' },
   },
-  // processResources -> runScript
   {
     id: 'processResources-runScript',
     source: 'processResources',
     target: 'runScript',
     data: { dependencyType: 'dependsOn' },
   },
-  // jar -> copyAssets
   {
     id: 'jar-copyAssets',
     source: 'jar',
     target: 'copyAssets',
     data: { dependencyType: 'dependsOn' },
   },
-  // copyAssets -> packageDist
   {
     id: 'copyAssets-packageDist',
     source: 'copyAssets',
     target: 'packageDist',
     data: { dependencyType: 'dependsOn' },
   },
-  // assemble -> packageDist
   {
     id: 'assemble-packageDist',
     source: 'assemble',

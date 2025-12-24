@@ -9,6 +9,7 @@ import {
   TestTube,
   Hammer,
   FolderInput,
+  Globe,
   Puzzle,
 } from 'lucide-react';
 import type { GradleTaskNode as GradleTaskNodeType, GradleTaskType } from '../types/gradle';
@@ -16,7 +17,7 @@ import type { GradleTaskNode as GradleTaskNodeType, GradleTaskType } from '../ty
 /**
  * Maps Gradle task types to their corresponding icons
  */
-const taskTypeIcons: Record<GradleTaskType, React.ElementType> = {
+export const taskTypeIcons: Record<GradleTaskType, React.ElementType> = {
   Exec: Terminal,
   Copy: Copy,
   Delete: Trash2,
@@ -25,13 +26,14 @@ const taskTypeIcons: Record<GradleTaskType, React.ElementType> = {
   Test: TestTube,
   JavaCompile: Hammer,
   ProcessResources: FolderInput,
+  HttpRequest: Globe,
   Custom: Puzzle,
 };
 
 /**
  * Maps Gradle task types to their display colors
  */
-const taskTypeColors: Record<GradleTaskType, string> = {
+export const taskTypeColors: Record<GradleTaskType, string> = {
   Exec: '#3b82f6',      // blue
   Copy: '#22c55e',      // green
   Delete: '#ef4444',    // red
@@ -40,6 +42,7 @@ const taskTypeColors: Record<GradleTaskType, string> = {
   Test: '#06b6d4',      // cyan
   JavaCompile: '#f97316', // orange
   ProcessResources: '#84cc16', // lime
+  HttpRequest: '#ec4899', // pink
   Custom: '#6b7280',    // gray
 };
 
