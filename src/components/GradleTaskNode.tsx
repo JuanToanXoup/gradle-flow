@@ -11,8 +11,17 @@ import {
   FolderInput,
   Globe,
   Puzzle,
+  CheckCircle,
+  XCircle,
+  Loader,
+  Clock,
+  SkipForward,
 } from 'lucide-react';
-import type { GradleTaskNode as GradleTaskNodeType, GradleTaskType } from '../types/gradle';
+import type {
+  GradleTaskNode as GradleTaskNodeType,
+  GradleTaskType,
+  TaskExecutionStatus,
+} from '../types/gradle';
 
 /**
  * Maps Gradle task types to their corresponding icons
@@ -47,18 +56,46 @@ export const taskTypeColors: Record<GradleTaskType, string> = {
 };
 
 /**
+ * Maps execution status to colors
+ */
+const executionStatusColors: Record<TaskExecutionStatus, string> = {
+  idle: 'transparent',
+  pending: '#f59e0b',
+  running: '#3b82f6',
+  success: '#22c55e',
+  failed: '#ef4444',
+  skipped: '#94a3b8',
+};
+
+/**
  * Custom node component for Gradle tasks
  */
 function GradleTaskNodeComponent({ data, selected }: NodeProps<GradleTaskNodeType>) {
   const Icon = taskTypeIcons[data.taskType] || taskTypeIcons.Custom;
   const color = taskTypeColors[data.taskType] || taskTypeColors.Custom;
+  const executionStatus = (data.executionStatus as TaskExecutionStatus) || 'idle';
+  const statusColor = executionStatusColors[executionStatus];
+  const isDisabled = data.enabled === false;
+
+  // Determine border color based on execution status
+  const borderColor =
+    executionStatus !== 'idle'
+      ? statusColor
+      : selected
+        ? color
+        : '#e5e7eb';
 
   return (
     <div
-      className={`gradle-task-node ${selected ? 'selected' : ''}`}
+      className={`gradle-task-node ${selected ? 'selected' : ''} ${executionStatus} ${isDisabled ? 'disabled' : ''}`}
       style={{
-        borderColor: selected ? color : '#e5e7eb',
-        boxShadow: selected ? `0 0 0 2px ${color}40` : 'none',
+        borderColor,
+        boxShadow:
+          executionStatus === 'running'
+            ? `0 0 0 3px ${statusColor}40, 0 0 12px ${statusColor}30`
+            : selected
+              ? `0 0 0 2px ${color}40`
+              : 'none',
       }}
     >
       {/* Input handle for dependencies */}
@@ -83,6 +120,20 @@ function GradleTaskNodeComponent({ data, selected }: NodeProps<GradleTaskNodeTyp
           <div className="gradle-task-name">{data.taskName}</div>
           <div className="gradle-task-type">{data.taskType}</div>
         </div>
+
+        {/* Execution status indicator */}
+        {executionStatus !== 'idle' && (
+          <div
+            className="gradle-task-status"
+            style={{ color: statusColor }}
+          >
+            {executionStatus === 'running' && <Loader size={14} className="animate-spin" />}
+            {executionStatus === 'success' && <CheckCircle size={14} />}
+            {executionStatus === 'failed' && <XCircle size={14} />}
+            {executionStatus === 'pending' && <Clock size={14} />}
+            {executionStatus === 'skipped' && <SkipForward size={14} />}
+          </div>
+        )}
       </div>
 
       {/* Output handle for dependents */}

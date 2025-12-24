@@ -1,6 +1,56 @@
 import type { Node, Edge, BuiltInNode } from '@xyflow/react';
 
 /**
+ * Execution status for a task
+ */
+export type TaskExecutionStatus =
+  | 'idle'       // Not started
+  | 'pending'    // Waiting for dependencies
+  | 'running'    // Currently executing
+  | 'success'    // Completed successfully
+  | 'failed'     // Execution failed
+  | 'skipped';   // Skipped (disabled or condition not met)
+
+/**
+ * Execution result for a single task
+ */
+export interface TaskExecutionResult {
+  taskId: string;
+  taskName: string;
+  status: TaskExecutionStatus;
+  startTime?: number;
+  endTime?: number;
+  duration?: number;
+  output?: string;
+  error?: string;
+}
+
+/**
+ * Overall execution state
+ */
+export interface ExecutionState {
+  isRunning: boolean;
+  isPaused: boolean;
+  startTime?: number;
+  endTime?: number;
+  currentTaskId?: string;
+  taskResults: Map<string, TaskExecutionResult>;
+  executionOrder: string[];
+  logs: ExecutionLogEntry[];
+}
+
+/**
+ * Log entry for execution output
+ */
+export interface ExecutionLogEntry {
+  timestamp: number;
+  taskId?: string;
+  taskName?: string;
+  level: 'info' | 'warn' | 'error' | 'success';
+  message: string;
+}
+
+/**
  * Variable types for parameterizing task configurations
  */
 export type VariableType = 'string' | 'number' | 'boolean' | 'path' | 'list';

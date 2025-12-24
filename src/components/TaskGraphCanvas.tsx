@@ -25,8 +25,15 @@ import { PropertyPanel } from './PropertyPanel';
 import { EdgePropertyPanel } from './EdgePropertyPanel';
 import { NodePalette } from './NodePalette';
 import { VariablesPanel } from './VariablesPanel';
+import { ExecutionPanel } from './ExecutionPanel';
 import { sampleNodes, sampleEdges } from '../data/sampleGraph';
 import { validateConnection } from '../utils/graphUtils';
+import {
+  createInitialExecutionState,
+  getExecutionOrder,
+  simulateTaskExecution,
+  createLogEntry,
+} from '../utils/executionUtils';
 import {
   type GradleTaskNode as GradleTaskNodeType,
   type GradleTaskNodeData,
@@ -35,6 +42,8 @@ import {
   type AppNode,
   type GradleTaskType,
   type Variable,
+  type ExecutionState,
+  type TaskExecutionStatus,
   defaultTaskConfigs,
   systemVariables,
 } from '../types/gradle';
@@ -116,6 +125,11 @@ function TaskGraphCanvasInner() {
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [variables, setVariables] = useState<Variable[]>([...systemVariables]);
   const [variablesPanelExpanded, setVariablesPanelExpanded] = useState(true);
+  const [executionState, setExecutionState] = useState<ExecutionState>(
+    createInitialExecutionState()
+  );
+  const [executionPanelExpanded, setExecutionPanelExpanded] = useState(true);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Get the selected nodes from the node list
   const selectedNodes = useMemo(() => {
@@ -348,6 +362,262 @@ function TaskGraphCanvasInner() {
   );
 
   /**
+   * Update node execution status
+   */
+  const updateNodeExecutionStatus = useCallback(
+    (nodeId: string, status: TaskExecutionStatus) => {
+      setNodes((nds) =>
+        nds.map((node) => {
+          if (node.id === nodeId && node.type === 'gradleTask') {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                executionStatus: status,
+              },
+            };
+          }
+          return node;
+        })
+      );
+    },
+    [setNodes]
+  );
+
+  /**
+   * Clear all node execution statuses
+   */
+  const clearNodeExecutionStatuses = useCallback(() => {
+    setNodes((nds) =>
+      nds.map((node) => {
+        if (node.type === 'gradleTask') {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              executionStatus: 'idle' as TaskExecutionStatus,
+            },
+          };
+        }
+        return node;
+      })
+    );
+  }, [setNodes]);
+
+  /**
+   * Run execution for the specified tasks or all tasks
+   */
+  const handleRun = useCallback(
+    async (taskIds?: string[]) => {
+      // Calculate execution order
+      const order = getExecutionOrder(allGradleNodes, edges, taskIds);
+
+      if (order.length === 0) {
+        setExecutionState((prev) => ({
+          ...prev,
+          logs: [
+            ...prev.logs,
+            createLogEntry('warn', 'No tasks to execute'),
+          ],
+        }));
+        return;
+      }
+
+      // Create abort controller for stopping execution
+      const abortController = new AbortController();
+      abortControllerRef.current = abortController;
+
+      // Initialize execution state
+      const initialResults = new Map<string, {
+        taskId: string;
+        taskName: string;
+        status: TaskExecutionStatus;
+      }>();
+      order.forEach((taskId) => {
+        const node = allGradleNodes.find((n) => n.id === taskId);
+        if (node) {
+          initialResults.set(taskId, {
+            taskId,
+            taskName: node.data.taskName,
+            status: 'pending',
+          });
+          updateNodeExecutionStatus(taskId, 'pending');
+        }
+      });
+
+      setExecutionState({
+        isRunning: true,
+        isPaused: false,
+        startTime: Date.now(),
+        executionOrder: order,
+        taskResults: initialResults,
+        logs: [createLogEntry('info', `Starting execution of ${order.length} tasks...`)],
+      });
+
+      // Execute tasks in order
+      for (const taskId of order) {
+        // Check for abort
+        if (abortController.signal.aborted) {
+          break;
+        }
+
+        // Wait while paused
+        while (
+          !abortController.signal.aborted &&
+          abortControllerRef.current === abortController
+        ) {
+          const state = await new Promise<ExecutionState>((resolve) => {
+            setExecutionState((prev) => {
+              resolve(prev);
+              return prev;
+            });
+          });
+          if (!state.isPaused) break;
+          await new Promise((r) => setTimeout(r, 100));
+        }
+
+        if (abortController.signal.aborted) break;
+
+        const node = allGradleNodes.find((n) => n.id === taskId);
+        if (!node) continue;
+
+        // Update status to running
+        updateNodeExecutionStatus(taskId, 'running');
+        setExecutionState((prev) => ({
+          ...prev,
+          currentTaskId: taskId,
+          taskResults: new Map(prev.taskResults).set(taskId, {
+            taskId,
+            taskName: node.data.taskName,
+            status: 'running',
+            startTime: Date.now(),
+          }),
+          logs: [...prev.logs, createLogEntry('info', `Running task: ${node.data.taskName}`, taskId, node.data.taskName)],
+        }));
+
+        // Simulate task execution
+        const startTime = Date.now();
+        const result = await simulateTaskExecution(node, (output) => {
+          setExecutionState((prev) => ({
+            ...prev,
+            logs: [...prev.logs, createLogEntry('info', output, taskId, node.data.taskName)],
+          }));
+        });
+
+        const endTime = Date.now();
+        const duration = endTime - startTime;
+        const status: TaskExecutionStatus = result.success ? 'success' : 'failed';
+
+        // Update node and execution state
+        updateNodeExecutionStatus(taskId, status);
+        setExecutionState((prev) => ({
+          ...prev,
+          taskResults: new Map(prev.taskResults).set(taskId, {
+            taskId,
+            taskName: node.data.taskName,
+            status,
+            startTime,
+            endTime,
+            duration,
+            output: result.output,
+            error: result.error,
+          }),
+          logs: [
+            ...prev.logs,
+            createLogEntry(
+              result.success ? 'success' : 'error',
+              result.success ? `Task ${node.data.taskName} completed` : `Task ${node.data.taskName} failed: ${result.error}`,
+              taskId,
+              node.data.taskName
+            ),
+          ],
+        }));
+
+        // Stop on failure
+        if (!result.success) {
+          // Mark remaining tasks as skipped
+          const currentIndex = order.indexOf(taskId);
+          for (let i = currentIndex + 1; i < order.length; i++) {
+            const skipId = order[i];
+            const skipNode = allGradleNodes.find((n) => n.id === skipId);
+            if (skipNode) {
+              updateNodeExecutionStatus(skipId, 'skipped');
+              setExecutionState((prev) => ({
+                ...prev,
+                taskResults: new Map(prev.taskResults).set(skipId, {
+                  taskId: skipId,
+                  taskName: skipNode.data.taskName,
+                  status: 'skipped',
+                }),
+              }));
+            }
+          }
+          break;
+        }
+      }
+
+      // Mark execution as complete
+      setExecutionState((prev) => ({
+        ...prev,
+        isRunning: false,
+        isPaused: false,
+        endTime: Date.now(),
+        currentTaskId: undefined,
+        logs: [...prev.logs, createLogEntry('info', 'Execution finished')],
+      }));
+
+      abortControllerRef.current = null;
+    },
+    [allGradleNodes, edges, updateNodeExecutionStatus]
+  );
+
+  /**
+   * Stop execution
+   */
+  const handleStop = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    setExecutionState((prev) => ({
+      ...prev,
+      isRunning: false,
+      isPaused: false,
+      logs: [...prev.logs, createLogEntry('warn', 'Execution stopped by user')],
+    }));
+  }, []);
+
+  /**
+   * Pause execution
+   */
+  const handlePause = useCallback(() => {
+    setExecutionState((prev) => ({
+      ...prev,
+      isPaused: true,
+      logs: [...prev.logs, createLogEntry('info', 'Execution paused')],
+    }));
+  }, []);
+
+  /**
+   * Resume execution
+   */
+  const handleResume = useCallback(() => {
+    setExecutionState((prev) => ({
+      ...prev,
+      isPaused: false,
+      logs: [...prev.logs, createLogEntry('info', 'Execution resumed')],
+    }));
+  }, []);
+
+  /**
+   * Reset execution state
+   */
+  const handleReset = useCallback(() => {
+    clearNodeExecutionStatuses();
+    setExecutionState(createInitialExecutionState());
+  }, [clearNodeExecutionStatuses]);
+
+  /**
    * Handle keyboard events for deletion
    */
   const onKeyDown = useCallback(
@@ -438,7 +708,7 @@ function TaskGraphCanvasInner() {
 
   return (
     <div className="task-graph-container" onKeyDown={onKeyDown} tabIndex={0}>
-      {/* Left sidebar with palette and variables */}
+      {/* Left sidebar with palette, variables, and execution */}
       <div className="left-sidebar">
         <NodePalette onDragStart={handlePaletteDragStart} />
         <VariablesPanel
@@ -446,6 +716,18 @@ function TaskGraphCanvasInner() {
           onVariablesChange={setVariables}
           isExpanded={variablesPanelExpanded}
           onToggleExpanded={() => setVariablesPanelExpanded((prev) => !prev)}
+        />
+        <ExecutionPanel
+          executionState={executionState}
+          nodes={allGradleNodes}
+          selectedTaskIds={selectedNodeIds}
+          onRun={handleRun}
+          onStop={handleStop}
+          onPause={handlePause}
+          onResume={handleResume}
+          onReset={handleReset}
+          isExpanded={executionPanelExpanded}
+          onToggleExpanded={() => setExecutionPanelExpanded((prev) => !prev)}
         />
       </div>
 
