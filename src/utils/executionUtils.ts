@@ -5,6 +5,96 @@ import type {
   ExecutionState,
   ExecutionLogEntry,
 } from '../types/gradle';
+import { isRunningInIDE, getBridgeSafe } from '../types/ideBridge';
+
+/**
+ * Execute a task - uses real Gradle execution in IDE, simulation otherwise
+ */
+export async function executeTask(
+  node: GradleTaskNode,
+  onProgress?: (output: string) => void
+): Promise<{ success: boolean; output: string; error?: string }> {
+  // Check if we're running in an IDE with the bridge
+  if (isRunningInIDE()) {
+    return executeTaskInIDE(node, onProgress);
+  }
+
+  // Fall back to simulation
+  return simulateTaskExecution(node, onProgress);
+}
+
+/**
+ * Execute a task using the IDE bridge (real Gradle execution)
+ */
+async function executeTaskInIDE(
+  node: GradleTaskNode,
+  onProgress?: (output: string) => void
+): Promise<{ success: boolean; output: string; error?: string }> {
+  const bridge = getBridgeSafe();
+  if (!bridge) {
+    return simulateTaskExecution(node, onProgress);
+  }
+
+  const taskName = node.data.taskName;
+  let output = '';
+  let error: string | undefined;
+  let success = false;
+
+  // Create a promise that resolves when the task completes
+  return new Promise((resolve) => {
+    // Listen for output events
+    const handleOutput = (data: { taskName: string; output: string }) => {
+      if (data.taskName === taskName) {
+        output += data.output;
+        onProgress?.(output);
+      }
+    };
+
+    // Listen for completion
+    const handleCompleted = (result: {
+      taskName: string;
+      success: boolean;
+      output: string;
+      error?: string;
+    }) => {
+      if (result.taskName === taskName) {
+        success = result.success;
+        output = result.output;
+        error = result.error;
+        cleanup();
+        resolve({ success, output, error });
+      }
+    };
+
+    // Listen for failure
+    const handleFailed = (data: { taskName: string; error: string }) => {
+      if (data.taskName === taskName) {
+        success = false;
+        error = data.error;
+        cleanup();
+        resolve({ success: false, output, error });
+      }
+    };
+
+    // Cleanup listeners
+    const cleanup = () => {
+      bridge.off('taskOutput', handleOutput);
+      bridge.off('taskCompleted', handleCompleted);
+      bridge.off('taskFailed', handleFailed);
+    };
+
+    // Register listeners
+    bridge.on('taskOutput', handleOutput);
+    bridge.on('taskCompleted', handleCompleted);
+    bridge.on('taskFailed', handleFailed);
+
+    // Start the task
+    bridge.executeTask(taskName).catch((err) => {
+      cleanup();
+      resolve({ success: false, output, error: err.message });
+    });
+  });
+}
 
 /**
  * Create initial execution state

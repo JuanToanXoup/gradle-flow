@@ -34,7 +34,7 @@ import { validateConnection } from '../utils/graphUtils';
 import {
   createInitialExecutionState,
   getExecutionOrder,
-  simulateTaskExecution,
+  executeTask,
   createLogEntry,
 } from '../utils/executionUtils';
 import { shouldExecuteTask } from '../utils/conditionUtils';
@@ -537,9 +537,9 @@ function TaskGraphCanvasInner() {
           logs: [...prev.logs, createLogEntry('info', `Running task: ${node.data.taskName}`, taskId, node.data.taskName)],
         }));
 
-        // Simulate task execution
+        // Execute task (uses real Gradle execution in IDE, simulation otherwise)
         const startTime = Date.now();
-        const result = await simulateTaskExecution(node, (output) => {
+        const result = await executeTask(node, (output) => {
           setExecutionState((prev) => ({
             ...prev,
             logs: [...prev.logs, createLogEntry('info', output, taskId, node.data.taskName)],
