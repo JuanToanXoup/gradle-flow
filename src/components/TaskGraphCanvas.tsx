@@ -1,4 +1,4 @@
-import { useCallback, useState, useMemo } from 'react';
+import { useCallback, useState, useMemo, useRef } from 'react';
 import {
   ReactFlow,
   Background,
@@ -12,17 +12,22 @@ import {
   type OnSelectionChangeParams,
   addEdge,
   type Connection,
+  useReactFlow,
+  ReactFlowProvider,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
 import { GradleTaskNode } from './GradleTaskNode';
 import { PropertyPanel } from './PropertyPanel';
+import { NodePalette } from './NodePalette';
 import { sampleNodes, sampleEdges } from '../data/sampleGraph';
-import type {
-  GradleTaskNode as GradleTaskNodeType,
-  GradleTaskNodeData,
-  GradleEdge,
-  AppNode,
+import {
+  type GradleTaskNode as GradleTaskNodeType,
+  type GradleTaskNodeData,
+  type GradleEdge,
+  type AppNode,
+  type GradleTaskType,
+  defaultTaskConfigs,
 } from '../types/gradle';
 
 /**
@@ -31,6 +36,30 @@ import type {
 const nodeTypes: NodeTypes = {
   gradleTask: GradleTaskNode,
 };
+
+/**
+ * Generate a unique ID for new nodes
+ */
+let nodeIdCounter = 100;
+function generateNodeId(): string {
+  return `task_${++nodeIdCounter}`;
+}
+
+/**
+ * Generate a unique task name
+ */
+function generateTaskName(taskType: GradleTaskType, existingNames: Set<string>): string {
+  const baseName = taskType.toLowerCase();
+  let name = baseName;
+  let counter = 1;
+
+  while (existingNames.has(name)) {
+    name = `${baseName}${counter}`;
+    counter++;
+  }
+
+  return name;
+}
 
 /**
  * Multi-select info panel component
@@ -57,12 +86,16 @@ function MultiSelectPanel({ selectedNodes, onDelete }: MultiSelectPanelProps) {
 }
 
 /**
- * Main canvas component for the Gradle task graph
+ * Inner canvas component that uses React Flow hooks
  */
-export function TaskGraphCanvas() {
+function TaskGraphCanvasInner() {
+  const reactFlowWrapper = useRef<HTMLDivElement>(null);
+  const { screenToFlowPosition } = useReactFlow();
+
   const [nodes, setNodes, onNodesChange] = useNodesState<AppNode>(sampleNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState<GradleEdge>(sampleEdges);
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
+  const [, setDraggedTaskType] = useState<GradleTaskType | null>(null);
 
   // Get the selected nodes from the node list
   const selectedNodes = useMemo(() => {
@@ -79,6 +112,11 @@ export function TaskGraphCanvas() {
   const allGradleNodes = useMemo(() => {
     return nodes.filter((n): n is GradleTaskNodeType => n.type === 'gradleTask');
   }, [nodes]);
+
+  // Get existing task names for unique name generation
+  const existingTaskNames = useMemo(() => {
+    return new Set(allGradleNodes.map((n) => n.data.taskName));
+  }, [allGradleNodes]);
 
   /**
    * Handle selection changes to track selected nodes
@@ -220,9 +258,76 @@ export function TaskGraphCanvas() {
     [selectedNodeIds, handleDeleteSelected]
   );
 
+  /**
+   * Handle drag start from palette
+   */
+  const handlePaletteDragStart = useCallback((taskType: GradleTaskType) => {
+    setDraggedTaskType(taskType);
+  }, []);
+
+  /**
+   * Handle drag over the canvas
+   */
+  const onDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  /**
+   * Handle drop on the canvas to create a new node
+   */
+  const onDrop = useCallback(
+    (event: React.DragEvent) => {
+      event.preventDefault();
+
+      const taskType = event.dataTransfer.getData('application/reactflow') as GradleTaskType;
+      if (!taskType) return;
+
+      // Get the position where the node was dropped
+      const position = screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+
+      // Generate unique ID and name
+      const nodeId = generateNodeId();
+      const taskName = generateTaskName(taskType, existingTaskNames);
+
+      // Create the new node with default configuration
+      const newNode: GradleTaskNodeType = {
+        id: nodeId,
+        type: 'gradleTask',
+        position,
+        data: {
+          taskName,
+          taskType,
+          enabled: true,
+          config: { ...defaultTaskConfigs[taskType] },
+        },
+      };
+
+      // Add the node to the graph
+      setNodes((nds) => [...nds, newNode]);
+
+      // Select the new node
+      setSelectedNodeIds([nodeId]);
+      setDraggedTaskType(null);
+    },
+    [screenToFlowPosition, existingTaskNames, setNodes]
+  );
+
   return (
     <div className="task-graph-container" onKeyDown={onKeyDown} tabIndex={0}>
-      <div className="canvas-wrapper">
+      {/* Node palette sidebar */}
+      <NodePalette onDragStart={handlePaletteDragStart} />
+
+      {/* Canvas wrapper */}
+      <div
+        className="canvas-wrapper"
+        ref={reactFlowWrapper}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
+      >
         <ReactFlow<AppNode, GradleEdge>
           nodes={nodes}
           edges={edges}
@@ -277,5 +382,16 @@ export function TaskGraphCanvas() {
         />
       )}
     </div>
+  );
+}
+
+/**
+ * Main canvas component wrapped with ReactFlowProvider
+ */
+export function TaskGraphCanvas() {
+  return (
+    <ReactFlowProvider>
+      <TaskGraphCanvasInner />
+    </ReactFlowProvider>
   );
 }

@@ -12,6 +12,7 @@ export type GradleTaskType =
   | 'Test'
   | 'JavaCompile'
   | 'ProcessResources'
+  | 'HttpRequest'
   | 'Custom';
 
 /**
@@ -107,6 +108,25 @@ export interface JavaCompileConfig {
 }
 
 /**
+ * HTTP method types
+ */
+export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+
+/**
+ * Configuration for HttpRequest tasks
+ */
+export interface HttpRequestConfig {
+  url?: string;
+  method?: HttpMethod;
+  headers?: Record<string, string>;
+  body?: string;
+  contentType?: string;
+  timeout?: number;
+  followRedirects?: boolean;
+  outputFile?: string;
+}
+
+/**
  * Union type for all task configurations
  */
 export type TaskConfig =
@@ -116,6 +136,7 @@ export type TaskConfig =
   | ArchiveConfig
   | TestConfig
   | JavaCompileConfig
+  | HttpRequestConfig
   | Record<string, unknown>;
 
 /**
@@ -292,6 +313,27 @@ export const taskPropertySchemas: Record<GradleTaskType, PropertyFieldDef[]> = {
       { value: 'INHERIT', label: 'Inherit' },
     ]},
   ],
+  HttpRequest: [
+    { name: 'url', label: 'URL', type: 'text', required: true, placeholder: 'https://api.example.com/endpoint' },
+    { name: 'method', label: 'Method', type: 'select', options: [
+      { value: 'GET', label: 'GET' },
+      { value: 'POST', label: 'POST' },
+      { value: 'PUT', label: 'PUT' },
+      { value: 'DELETE', label: 'DELETE' },
+      { value: 'PATCH', label: 'PATCH' },
+    ]},
+    { name: 'headers', label: 'Headers', type: 'keyvalue', helperText: 'HTTP request headers' },
+    { name: 'body', label: 'Request Body', type: 'text', placeholder: 'JSON or text body' },
+    { name: 'contentType', label: 'Content Type', type: 'select', options: [
+      { value: 'application/json', label: 'JSON' },
+      { value: 'application/xml', label: 'XML' },
+      { value: 'text/plain', label: 'Plain Text' },
+      { value: 'application/x-www-form-urlencoded', label: 'Form URL Encoded' },
+    ]},
+    { name: 'timeout', label: 'Timeout (seconds)', type: 'number', min: 1, placeholder: '30' },
+    { name: 'followRedirects', label: 'Follow Redirects', type: 'checkbox' },
+    { name: 'outputFile', label: 'Save Response To', type: 'file', placeholder: 'e.g., build/response.json' },
+  ],
   Custom: [
     { name: 'dependsOn', label: 'Dependencies', type: 'nodepicker', helperText: 'Tasks that must run before this one' },
   ],
@@ -308,3 +350,158 @@ export const commonPropertyFields: PropertyFieldDef[] = [
   { name: 'timeout', label: 'Timeout (minutes)', type: 'number', min: 1, placeholder: '30' },
   { name: 'dependsOn', label: 'Dependencies', type: 'nodepicker', helperText: 'Tasks that must run before this one' },
 ];
+
+/**
+ * Palette category for organizing task types
+ */
+export type PaletteCategory = 'File Operations' | 'Network' | 'Build' | 'Custom';
+
+/**
+ * Palette item definition for drag-and-drop
+ */
+export interface PaletteItem {
+  taskType: GradleTaskType;
+  label: string;
+  description: string;
+  category: PaletteCategory;
+}
+
+/**
+ * Palette items organized by category
+ */
+export const paletteItems: PaletteItem[] = [
+  // File Operations
+  {
+    taskType: 'Copy',
+    label: 'Copy Files',
+    description: 'Copy files from source to destination',
+    category: 'File Operations',
+  },
+  {
+    taskType: 'Delete',
+    label: 'Delete Files',
+    description: 'Delete files and directories',
+    category: 'File Operations',
+  },
+  {
+    taskType: 'Zip',
+    label: 'Create Zip',
+    description: 'Create a ZIP archive',
+    category: 'File Operations',
+  },
+  {
+    taskType: 'ProcessResources',
+    label: 'Process Resources',
+    description: 'Process and copy resource files',
+    category: 'File Operations',
+  },
+  // Network
+  {
+    taskType: 'HttpRequest',
+    label: 'HTTP Request',
+    description: 'Make HTTP API calls',
+    category: 'Network',
+  },
+  // Build
+  {
+    taskType: 'Exec',
+    label: 'Run Command',
+    description: 'Execute shell commands',
+    category: 'Build',
+  },
+  {
+    taskType: 'JavaCompile',
+    label: 'Compile Java',
+    description: 'Compile Java source files',
+    category: 'Build',
+  },
+  {
+    taskType: 'Jar',
+    label: 'Create JAR',
+    description: 'Package classes into JAR',
+    category: 'Build',
+  },
+  {
+    taskType: 'Test',
+    label: 'Run Tests',
+    description: 'Execute test suites',
+    category: 'Build',
+  },
+  // Custom
+  {
+    taskType: 'Custom',
+    label: 'Lifecycle Task',
+    description: 'Aggregate task for dependencies',
+    category: 'Custom',
+  },
+];
+
+/**
+ * Default configurations for new tasks of each type
+ */
+export const defaultTaskConfigs: Record<GradleTaskType, TaskConfig> = {
+  Exec: {
+    commandLine: [],
+    args: [],
+    environment: {},
+    ignoreExitValue: false,
+  },
+  Copy: {
+    from: [],
+    into: '',
+    include: [],
+    exclude: [],
+    duplicatesStrategy: 'EXCLUDE',
+    preserveFileTimestamps: true,
+  },
+  Delete: {
+    delete: [],
+    followSymlinks: false,
+  },
+  Zip: {
+    from: [],
+    archiveFileName: 'archive.zip',
+    destinationDirectory: 'build/distributions',
+    include: [],
+    exclude: [],
+    duplicatesStrategy: 'EXCLUDE',
+    preserveFileTimestamps: true,
+  },
+  Jar: {
+    from: [],
+    archiveFileName: 'output.jar',
+    destinationDirectory: 'build/libs',
+    duplicatesStrategy: 'EXCLUDE',
+  },
+  Test: {
+    include: ['**/*Test.class'],
+    exclude: [],
+    maxParallelForks: 1,
+    failFast: false,
+    ignoreFailures: false,
+    jvmArgs: [],
+  },
+  JavaCompile: {
+    sourceCompatibility: '17',
+    targetCompatibility: '17',
+    encoding: 'UTF-8',
+    compilerArgs: [],
+    deprecation: true,
+    warnings: true,
+  },
+  ProcessResources: {
+    from: [],
+    into: '',
+    include: [],
+    exclude: [],
+    duplicatesStrategy: 'EXCLUDE',
+  },
+  HttpRequest: {
+    url: '',
+    method: 'GET',
+    headers: {},
+    followRedirects: true,
+    timeout: 30,
+  },
+  Custom: {},
+};
