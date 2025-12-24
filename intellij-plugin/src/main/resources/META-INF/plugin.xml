@@ -1,0 +1,83 @@
+<idea-plugin>
+    <id>com.gradleflow.plugin</id>
+    <name>Gradle Flow - Visual Task Editor</name>
+    <vendor email="support@gradleflow.dev" url="https://gradleflow.dev">Gradle Flow</vendor>
+
+    <description><![CDATA[
+    <h2>Visual Editor for Gradle Build Files</h2>
+    <p>Gradle Flow provides a visual drag-and-drop interface for creating and editing Gradle task graphs.</p>
+
+    <h3>Features:</h3>
+    <ul>
+        <li>Visual task graph editor with React Flow</li>
+        <li>Drag and drop task creation</li>
+        <li>Visual dependency management</li>
+        <li>Real-time Gradle execution</li>
+        <li>Bidirectional sync with build.gradle.kts</li>
+        <li>Task grouping and organization</li>
+        <li>Execution history and statistics</li>
+    </ul>
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>org.jetbrains.plugins.gradle</depends>
+    <depends>org.jetbrains.kotlin</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Tool Window -->
+        <toolWindow id="Gradle Flow"
+                    secondary="false"
+                    icon="/icons/gradle-flow.svg"
+                    anchor="right"
+                    factoryClass="com.gradleflow.plugin.toolwindow.GradleFlowToolWindowFactory"/>
+
+        <!-- File Editor for build.gradle.kts -->
+        <fileEditorProvider implementation="com.gradleflow.plugin.editor.GradleFlowEditorProvider"/>
+
+        <!-- Project Service -->
+        <projectService serviceImplementation="com.gradleflow.plugin.services.GradleFlowService"/>
+
+        <!-- Settings -->
+        <applicationConfigurable parentId="tools"
+                                 instance="com.gradleflow.plugin.settings.GradleFlowSettingsConfigurable"
+                                 id="com.gradleflow.plugin.settings"
+                                 displayName="Gradle Flow"/>
+        <applicationService serviceImplementation="com.gradleflow.plugin.settings.GradleFlowSettings"/>
+
+        <!-- Notifications -->
+        <notificationGroup id="Gradle Flow"
+                           displayType="BALLOON"
+                           toolWindowId="Gradle Flow"/>
+    </extensions>
+
+    <actions>
+        <group id="GradleFlow.MainMenu" text="Gradle Flow" popup="true">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+
+            <action id="GradleFlow.OpenVisualEditor"
+                    class="com.gradleflow.plugin.actions.OpenVisualEditorAction"
+                    text="Open Visual Editor"
+                    description="Open the visual Gradle task editor"
+                    icon="/icons/gradle-flow.svg"/>
+
+            <action id="GradleFlow.SyncFromFile"
+                    class="com.gradleflow.plugin.actions.SyncFromFileAction"
+                    text="Sync from build.gradle.kts"
+                    description="Import tasks from the Gradle build file"/>
+
+            <action id="GradleFlow.SyncToFile"
+                    class="com.gradleflow.plugin.actions.SyncToFileAction"
+                    text="Sync to build.gradle.kts"
+                    description="Export visual graph to Gradle build file"/>
+        </group>
+
+        <!-- Context menu for build.gradle.kts -->
+        <action id="GradleFlow.OpenInVisualEditor"
+                class="com.gradleflow.plugin.actions.OpenInVisualEditorAction"
+                text="Open in Gradle Flow"
+                description="Edit this file in the visual editor">
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="EditSource"/>
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </action>
+    </actions>
+</idea-plugin>
