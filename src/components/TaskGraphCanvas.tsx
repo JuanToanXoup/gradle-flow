@@ -28,7 +28,7 @@ import { NodePalette } from './NodePalette';
 import { VariablesPanel } from './VariablesPanel';
 import { ExecutionPanel } from './ExecutionPanel';
 import { GroupPanel } from './GroupPanel';
-import { ExportPanel } from './ExportPanel';
+import { ImportExportPanel } from './ImportExportPanel';
 import { sampleNodes, sampleEdges } from '../data/sampleGraph';
 import { validateConnection } from '../utils/graphUtils';
 import {
@@ -746,6 +746,32 @@ function TaskGraphCanvasInner() {
     [groups]
   );
 
+  /**
+   * Handle importing tasks from a Gradle file
+   */
+  const handleImport = useCallback(
+    (importedNodes: GradleTaskNodeType[], importedEdges: GradleEdge[]) => {
+      // Add imported nodes to the graph
+      setNodes((prevNodes) => {
+        // Offset imported nodes to avoid overlap
+        const offsetX = 400;
+        const offsetY = 100;
+        const adjustedNodes = importedNodes.map((node) => ({
+          ...node,
+          position: {
+            x: node.position.x + offsetX,
+            y: node.position.y + offsetY,
+          },
+        }));
+        return [...prevNodes, ...adjustedNodes];
+      });
+
+      // Add imported edges
+      setEdges((prevEdges) => [...prevEdges, ...importedEdges]);
+    },
+    [setNodes, setEdges]
+  );
+
   // Convert groups to nodes for rendering
   const groupNodes = useMemo(() => {
     return groups.map((group) => {
@@ -1007,13 +1033,14 @@ function TaskGraphCanvasInner() {
         Export
       </button>
 
-      {/* Export Panel */}
-      <ExportPanel
+      {/* Import/Export Panel */}
+      <ImportExportPanel
         nodes={allGradleNodes}
         edges={edges}
         variables={variables}
         isOpen={exportPanelOpen}
         onClose={() => setExportPanelOpen(false)}
+        onImport={handleImport}
       />
     </div>
   );
