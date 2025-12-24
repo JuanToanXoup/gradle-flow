@@ -1,6 +1,73 @@
 import type { Node, Edge, BuiltInNode } from '@xyflow/react';
 
 /**
+ * Variable types for parameterizing task configurations
+ */
+export type VariableType = 'string' | 'number' | 'boolean' | 'path' | 'list';
+
+/**
+ * Variable definition for the graph
+ */
+export interface Variable {
+  /** Unique identifier for the variable */
+  id: string;
+  /** Variable name (used in references like ${varName}) */
+  name: string;
+  /** Type of the variable */
+  type: VariableType;
+  /** Default value */
+  defaultValue: string;
+  /** Current value (can be overridden at runtime) */
+  value: string;
+  /** Optional description */
+  description?: string;
+  /** Whether this is a system/environment variable */
+  isSystem?: boolean;
+}
+
+/**
+ * Predefined system variables available in all graphs
+ */
+export const systemVariables: Variable[] = [
+  {
+    id: 'sys_project_dir',
+    name: 'projectDir',
+    type: 'path',
+    defaultValue: '.',
+    value: '.',
+    description: 'The root directory of the project',
+    isSystem: true,
+  },
+  {
+    id: 'sys_build_dir',
+    name: 'buildDir',
+    type: 'path',
+    defaultValue: 'build',
+    value: 'build',
+    description: 'The build output directory',
+    isSystem: true,
+  },
+  {
+    id: 'sys_version',
+    name: 'version',
+    type: 'string',
+    defaultValue: '1.0.0',
+    value: '1.0.0',
+    description: 'The project version',
+    isSystem: true,
+  },
+  {
+    id: 'sys_group',
+    name: 'group',
+    type: 'string',
+    defaultValue: 'com.example',
+    value: 'com.example',
+    description: 'The project group/package',
+    isSystem: true,
+  },
+];
+
+/**
  * Gradle task types supported by the visual editor
  */
 export type GradleTaskType =

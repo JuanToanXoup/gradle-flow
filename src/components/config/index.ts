@@ -6,3 +6,4 @@ export { PathInput } from './PathInput';
 export { ListEditor } from './ListEditor';
 export { KeyValueEditor } from './KeyValueEditor';
 export { NodePicker } from './NodePicker';
+export { VariableInput } from './VariableInput';
