@@ -20,12 +20,14 @@ import {
 import '@xyflow/react/dist/style.css';
 
 import { GradleTaskNode } from './GradleTaskNode';
+import { TaskGroupNode } from './TaskGroupNode';
 import { GradleDependencyEdge } from './GradleDependencyEdge';
 import { PropertyPanel } from './PropertyPanel';
 import { EdgePropertyPanel } from './EdgePropertyPanel';
 import { NodePalette } from './NodePalette';
 import { VariablesPanel } from './VariablesPanel';
 import { ExecutionPanel } from './ExecutionPanel';
+import { GroupPanel } from './GroupPanel';
 import { sampleNodes, sampleEdges } from '../data/sampleGraph';
 import { validateConnection } from '../utils/graphUtils';
 import {
@@ -36,6 +38,11 @@ import {
 } from '../utils/executionUtils';
 import { shouldExecuteTask } from '../utils/conditionUtils';
 import { createHistoryEntry, addHistoryEntry } from '../utils/historyUtils';
+import {
+  createGroupFromNodes,
+  updateGroupBounds,
+  groupToNode,
+} from '../utils/groupUtils';
 import { HistoryPanel } from './HistoryPanel';
 import {
   type GradleTaskNode as GradleTaskNodeType,
@@ -47,6 +54,7 @@ import {
   type Variable,
   type ExecutionState,
   type TaskExecutionStatus,
+  type TaskGroup,
   defaultTaskConfigs,
   systemVariables,
 } from '../types/gradle';
@@ -56,6 +64,7 @@ import {
  */
 const nodeTypes: NodeTypes = {
   gradleTask: GradleTaskNode,
+  taskGroup: TaskGroupNode,
 };
 
 /**
@@ -133,6 +142,8 @@ function TaskGraphCanvasInner() {
   );
   const [executionPanelExpanded, setExecutionPanelExpanded] = useState(true);
   const [historyPanelExpanded, setHistoryPanelExpanded] = useState(false);
+  const [groupPanelExpanded, setGroupPanelExpanded] = useState(true);
+  const [groups, setGroups] = useState<TaskGroup[]>([]);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // Get the selected nodes from the node list
@@ -656,6 +667,106 @@ function TaskGraphCanvasInner() {
   }, [clearNodeExecutionStatuses]);
 
   /**
+   * Create a new group from selected nodes
+   */
+  const handleCreateGroup = useCallback(
+    (name: string, color: string, description?: string) => {
+      const selectedGradleNodes = allGradleNodes.filter((n) =>
+        selectedNodeIds.includes(n.id)
+      );
+
+      if (selectedGradleNodes.length === 0) {
+        // Create empty group at center
+        const newGroup: TaskGroup = {
+          id: `group_${Date.now()}`,
+          name,
+          description,
+          color,
+          collapsed: false,
+          taskIds: [],
+          position: { x: 100, y: 100 },
+          size: { width: 300, height: 200 },
+        };
+        setGroups((prev) => [...prev, newGroup]);
+      } else {
+        const newGroup = createGroupFromNodes(
+          selectedGradleNodes,
+          name,
+          color,
+          description
+        );
+        setGroups((prev) => [...prev, newGroup]);
+      }
+    },
+    [allGradleNodes, selectedNodeIds]
+  );
+
+  /**
+   * Update an existing group
+   */
+  const handleUpdateGroup = useCallback(
+    (groupId: string, updates: Partial<TaskGroup>) => {
+      setGroups((prev) =>
+        prev.map((g) => (g.id === groupId ? { ...g, ...updates } : g))
+      );
+    },
+    []
+  );
+
+  /**
+   * Delete a group (keeps the tasks)
+   */
+  const handleDeleteGroup = useCallback((groupId: string) => {
+    setGroups((prev) => prev.filter((g) => g.id !== groupId));
+  }, []);
+
+  /**
+   * Toggle group collapse state
+   */
+  const handleToggleGroupCollapse = useCallback((groupId: string) => {
+    setGroups((prev) =>
+      prev.map((g) =>
+        g.id === groupId ? { ...g, collapsed: !g.collapsed } : g
+      )
+    );
+  }, []);
+
+  /**
+   * Select all nodes in a group
+   */
+  const handleSelectGroup = useCallback(
+    (groupId: string) => {
+      const group = groups.find((g) => g.id === groupId);
+      if (group) {
+        setSelectedNodeIds(group.taskIds);
+      }
+    },
+    [groups]
+  );
+
+  // Convert groups to nodes for rendering
+  const groupNodes = useMemo(() => {
+    return groups.map((group) => {
+      // Update group bounds based on contained nodes
+      const updatedGroup = updateGroupBounds(group, allGradleNodes);
+      return groupToNode(
+        updatedGroup,
+        handleToggleGroupCollapse,
+        () => {
+          // Focus group in panel for editing
+          setGroupPanelExpanded(true);
+        },
+        handleDeleteGroup
+      );
+    });
+  }, [groups, allGradleNodes, handleToggleGroupCollapse, handleDeleteGroup]);
+
+  // Combine task nodes with group nodes
+  const allNodes = useMemo((): AppNode[] => {
+    return [...(groupNodes as AppNode[]), ...nodes];
+  }, [groupNodes, nodes]);
+
+  /**
    * Handle keyboard events for deletion
    */
   const onKeyDown = useCallback(
@@ -771,6 +882,18 @@ function TaskGraphCanvasInner() {
           isExpanded={historyPanelExpanded}
           onToggleExpanded={() => setHistoryPanelExpanded((prev) => !prev)}
         />
+        <GroupPanel
+          groups={groups}
+          selectedNodeIds={selectedNodeIds}
+          allNodes={allGradleNodes}
+          isExpanded={groupPanelExpanded}
+          onToggleExpanded={() => setGroupPanelExpanded((prev) => !prev)}
+          onCreateGroup={handleCreateGroup}
+          onUpdateGroup={handleUpdateGroup}
+          onDeleteGroup={handleDeleteGroup}
+          onToggleGroupCollapse={handleToggleGroupCollapse}
+          onSelectGroup={handleSelectGroup}
+        />
       </div>
 
       {/* Canvas wrapper */}
@@ -781,7 +904,7 @@ function TaskGraphCanvasInner() {
         onDrop={onDrop}
       >
         <ReactFlow<AppNode, GradleEdge>
-          nodes={nodes}
+          nodes={allNodes}
           edges={edges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}

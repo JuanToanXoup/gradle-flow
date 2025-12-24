@@ -109,6 +109,42 @@ export interface ExecutionHistoryStats {
 }
 
 /**
+ * Task group for organizing related tasks
+ */
+export interface TaskGroup {
+  /** Unique identifier for the group */
+  id: string;
+  /** Display name for the group */
+  name: string;
+  /** Optional description */
+  description?: string;
+  /** Background color for the group container */
+  color: string;
+  /** Whether the group is collapsed */
+  collapsed: boolean;
+  /** IDs of tasks contained in this group */
+  taskIds: string[];
+  /** Position of the group container */
+  position: { x: number; y: number };
+  /** Size of the group container (auto-calculated when null) */
+  size?: { width: number; height: number };
+}
+
+/**
+ * Predefined group colors
+ */
+export const groupColors = [
+  { value: '#dbeafe', label: 'Blue', border: '#3b82f6' },
+  { value: '#dcfce7', label: 'Green', border: '#22c55e' },
+  { value: '#fef3c7', label: 'Yellow', border: '#f59e0b' },
+  { value: '#fce7f3', label: 'Pink', border: '#ec4899' },
+  { value: '#f3e8ff', label: 'Purple', border: '#a855f7' },
+  { value: '#e0f2fe', label: 'Cyan', border: '#06b6d4' },
+  { value: '#fee2e2', label: 'Red', border: '#ef4444' },
+  { value: '#f1f5f9', label: 'Gray', border: '#64748b' },
+];
+
+/**
  * Variable types for parameterizing task configurations
  */
 export type VariableType = 'string' | 'number' | 'boolean' | 'path' | 'list';
