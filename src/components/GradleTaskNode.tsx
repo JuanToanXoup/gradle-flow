@@ -16,6 +16,7 @@ import {
   Loader,
   Clock,
   SkipForward,
+  GitBranch,
 } from 'lucide-react';
 import type {
   GradleTaskNode as GradleTaskNodeType,
@@ -76,6 +77,7 @@ function GradleTaskNodeComponent({ data, selected }: NodeProps<GradleTaskNodeTyp
   const executionStatus = (data.executionStatus as TaskExecutionStatus) || 'idle';
   const statusColor = executionStatusColors[executionStatus];
   const isDisabled = data.enabled === false;
+  const hasCondition = data.condition && data.condition.conditions.length > 0;
 
   // Determine border color based on execution status
   const borderColor =
@@ -120,6 +122,16 @@ function GradleTaskNodeComponent({ data, selected }: NodeProps<GradleTaskNodeTyp
           <div className="gradle-task-name">{data.taskName}</div>
           <div className="gradle-task-type">{data.taskType}</div>
         </div>
+
+        {/* Condition indicator */}
+        {hasCondition && executionStatus === 'idle' && (
+          <div
+            className="gradle-task-condition"
+            title={`${data.condition?.type === 'skipIf' ? 'Skip if' : 'Only if'} condition set`}
+          >
+            <GitBranch size={12} />
+          </div>
+        )}
 
         {/* Execution status indicator */}
         {executionStatus !== 'idle' && (

@@ -118,6 +118,70 @@ export const systemVariables: Variable[] = [
 ];
 
 /**
+ * Condition operators for comparisons
+ */
+export type ConditionOperator =
+  | 'equals'
+  | 'notEquals'
+  | 'contains'
+  | 'notContains'
+  | 'startsWith'
+  | 'endsWith'
+  | 'matches'       // Regex match
+  | 'greaterThan'
+  | 'lessThan'
+  | 'greaterOrEqual'
+  | 'lessOrEqual'
+  | 'isEmpty'
+  | 'isNotEmpty'
+  | 'isTrue'
+  | 'isFalse';
+
+/**
+ * Source type for condition values
+ */
+export type ConditionSource =
+  | 'variable'      // Reference a defined variable
+  | 'environment'   // Environment variable (process.env)
+  | 'property'      // Task or project property
+  | 'literal';      // Literal value
+
+/**
+ * A single condition definition
+ */
+export interface Condition {
+  /** Unique identifier */
+  id: string;
+  /** Source type for the left side value */
+  leftSource: ConditionSource;
+  /** Left side value (variable name, env var name, property path, or literal) */
+  leftValue: string;
+  /** Comparison operator */
+  operator: ConditionOperator;
+  /** Source type for the right side value (optional for unary operators) */
+  rightSource?: ConditionSource;
+  /** Right side value */
+  rightValue?: string;
+}
+
+/**
+ * Logic for combining multiple conditions
+ */
+export type ConditionLogic = 'and' | 'or';
+
+/**
+ * Task condition configuration (onlyIf / skipIf)
+ */
+export interface TaskCondition {
+  /** Condition type - onlyIf runs task when true, skipIf skips task when true */
+  type: 'onlyIf' | 'skipIf';
+  /** List of conditions to evaluate */
+  conditions: Condition[];
+  /** How to combine multiple conditions */
+  logic: ConditionLogic;
+}
+
+/**
  * Gradle task types supported by the visual editor
  */
 export type GradleTaskType =
@@ -284,6 +348,8 @@ export interface GradleTaskNodeData extends Record<string, unknown> {
   config?: TaskConfig;
   /** Task dependencies (other task IDs) */
   dependsOn?: string[];
+  /** Conditional execution settings (onlyIf/skipIf) */
+  condition?: TaskCondition;
   /** Validation errors */
   errors?: ValidationError[];
 }
