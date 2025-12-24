@@ -7,6 +7,7 @@ import {
   useNodesState,
   useEdgesState,
   type NodeTypes,
+  type EdgeTypes,
   BackgroundVariant,
   SelectionMode,
   type OnSelectionChangeParams,
@@ -14,17 +15,22 @@ import {
   type Connection,
   useReactFlow,
   ReactFlowProvider,
+  MarkerType,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
 import { GradleTaskNode } from './GradleTaskNode';
+import { GradleDependencyEdge } from './GradleDependencyEdge';
 import { PropertyPanel } from './PropertyPanel';
+import { EdgePropertyPanel } from './EdgePropertyPanel';
 import { NodePalette } from './NodePalette';
 import { sampleNodes, sampleEdges } from '../data/sampleGraph';
+import { validateConnection } from '../utils/graphUtils';
 import {
   type GradleTaskNode as GradleTaskNodeType,
   type GradleTaskNodeData,
   type GradleEdge,
+  type GradleEdgeData,
   type AppNode,
   type GradleTaskType,
   defaultTaskConfigs,
@@ -35,6 +41,13 @@ import {
  */
 const nodeTypes: NodeTypes = {
   gradleTask: GradleTaskNode,
+};
+
+/**
+ * Register custom edge types for React Flow
+ */
+const edgeTypes: EdgeTypes = {
+  dependency: GradleDependencyEdge,
 };
 
 /**
@@ -95,7 +108,9 @@ function TaskGraphCanvasInner() {
   const [nodes, setNodes, onNodesChange] = useNodesState<AppNode>(sampleNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState<GradleEdge>(sampleEdges);
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
+  const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [, setDraggedTaskType] = useState<GradleTaskType | null>(null);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
   // Get the selected nodes from the node list
   const selectedNodes = useMemo(() => {
@@ -118,15 +133,32 @@ function TaskGraphCanvasInner() {
     return new Set(allGradleNodes.map((n) => n.data.taskName));
   }, [allGradleNodes]);
 
+  // Get the selected edge
+  const selectedEdge = useMemo(() => {
+    if (!selectedEdgeId) return null;
+    return edges.find((e) => e.id === selectedEdgeId) || null;
+  }, [edges, selectedEdgeId]);
+
   /**
-   * Handle selection changes to track selected nodes
+   * Handle selection changes to track selected nodes and edges
    */
-  const onSelectionChange = useCallback(({ nodes: selected }: OnSelectionChangeParams) => {
-    const gradleNodeIds = selected
-      .filter((node) => node.type === 'gradleTask')
-      .map((node) => node.id);
-    setSelectedNodeIds(gradleNodeIds);
-  }, []);
+  const onSelectionChange = useCallback(
+    ({ nodes: selected, edges: selectedEdges }: OnSelectionChangeParams) => {
+      const gradleNodeIds = selected
+        .filter((node) => node.type === 'gradleTask')
+        .map((node) => node.id);
+      setSelectedNodeIds(gradleNodeIds);
+
+      // Handle edge selection
+      if (selectedEdges.length > 0) {
+        setSelectedEdgeId(selectedEdges[0].id);
+      } else if (gradleNodeIds.length > 0) {
+        // Clear edge selection when nodes are selected
+        setSelectedEdgeId(null);
+      }
+    },
+    []
+  );
 
   /**
    * Handle node click for single selection
@@ -135,10 +167,31 @@ function TaskGraphCanvasInner() {
     (_event: React.MouseEvent, node: AppNode) => {
       if (node.type === 'gradleTask') {
         setSelectedNodeIds([node.id]);
+        setSelectedEdgeId(null);
       }
     },
     []
   );
+
+  /**
+   * Handle edge click for selection
+   */
+  const onEdgeClick = useCallback(
+    (_event: React.MouseEvent, edge: GradleEdge) => {
+      setSelectedEdgeId(edge.id);
+      setSelectedNodeIds([]);
+    },
+    []
+  );
+
+  /**
+   * Handle canvas click to clear selection
+   */
+  const onPaneClick = useCallback(() => {
+    setSelectedNodeIds([]);
+    setSelectedEdgeId(null);
+    setConnectionError(null);
+  }, []);
 
   /**
    * Update a node's data
@@ -223,16 +276,68 @@ function TaskGraphCanvasInner() {
   }, [selectedNodeIds, setNodes, setEdges]);
 
   /**
-   * Handle new edge connections
+   * Handle new edge connections with validation
    */
   const onConnect = useCallback(
     (connection: Connection) => {
+      // Validate the connection
+      const validation = validateConnection(allGradleNodes, edges, connection);
+
+      if (!validation.valid) {
+        setConnectionError(validation.message || 'Invalid connection');
+        // Auto-clear error after 3 seconds
+        setTimeout(() => setConnectionError(null), 3000);
+        return;
+      }
+
       const newEdge: GradleEdge = {
         ...connection,
         id: `${connection.source}-${connection.target}`,
+        type: 'dependency',
         data: { dependencyType: 'dependsOn' },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          width: 16,
+          height: 16,
+        },
       } as GradleEdge;
+
       setEdges((eds) => addEdge(newEdge, eds));
+      setConnectionError(null);
+    },
+    [setEdges, allGradleNodes, edges]
+  );
+
+  /**
+   * Update an edge's data
+   */
+  const handleEdgeUpdate = useCallback(
+    (edgeId: string, updates: Partial<GradleEdgeData>) => {
+      setEdges((eds) =>
+        eds.map((edge): GradleEdge => {
+          if (edge.id === edgeId) {
+            return {
+              ...edge,
+              data: {
+                dependencyType: edge.data?.dependencyType || 'dependsOn',
+                ...updates,
+              },
+            };
+          }
+          return edge;
+        })
+      );
+    },
+    [setEdges]
+  );
+
+  /**
+   * Delete an edge by ID
+   */
+  const handleEdgeDelete = useCallback(
+    (edgeId: string) => {
+      setEdges((eds) => eds.filter((e) => e.id !== edgeId));
+      setSelectedEdgeId(null);
     },
     [setEdges]
   );
@@ -242,7 +347,7 @@ function TaskGraphCanvasInner() {
    */
   const onKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
-      if ((event.key === 'Delete' || event.key === 'Backspace') && selectedNodeIds.length > 0) {
+      if (event.key === 'Delete' || event.key === 'Backspace') {
         // Don't delete if focus is on an input
         if (
           event.target instanceof HTMLInputElement ||
@@ -252,10 +357,20 @@ function TaskGraphCanvasInner() {
           return;
         }
         event.preventDefault();
-        handleDeleteSelected();
+
+        // Delete selected edge
+        if (selectedEdgeId) {
+          handleEdgeDelete(selectedEdgeId);
+          return;
+        }
+
+        // Delete selected nodes
+        if (selectedNodeIds.length > 0) {
+          handleDeleteSelected();
+        }
       }
     },
-    [selectedNodeIds, handleDeleteSelected]
+    [selectedNodeIds, selectedEdgeId, handleDeleteSelected, handleEdgeDelete]
   );
 
   /**
@@ -335,8 +450,11 @@ function TaskGraphCanvasInner() {
           onEdgesChange={onEdgesChange}
           onSelectionChange={onSelectionChange}
           onNodeClick={onNodeClick}
+          onEdgeClick={onEdgeClick}
+          onPaneClick={onPaneClick}
           onConnect={onConnect}
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           selectionMode={SelectionMode.Partial}
           selectNodesOnDrag={false}
           selectionOnDrag
@@ -344,8 +462,12 @@ function TaskGraphCanvasInner() {
           fitView
           fitViewOptions={{ padding: 0.2 }}
           defaultEdgeOptions={{
-            type: 'smoothstep',
-            style: { strokeWidth: 2, stroke: '#64748b' },
+            type: 'dependency',
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              width: 16,
+              height: 16,
+            },
           }}
         >
           <Background
@@ -362,6 +484,13 @@ function TaskGraphCanvasInner() {
             style={{ backgroundColor: '#f8fafc' }}
           />
         </ReactFlow>
+
+        {/* Connection error message */}
+        {connectionError && (
+          <div className="connection-error">
+            {connectionError}
+          </div>
+        )}
       </div>
 
       {/* Show multi-select panel when multiple nodes are selected */}
@@ -372,8 +501,18 @@ function TaskGraphCanvasInner() {
         />
       )}
 
-      {/* Show property panel for single selection or empty state */}
-      {selectedNodes.length <= 1 && (
+      {/* Show edge property panel when an edge is selected */}
+      {selectedEdge && selectedNodes.length === 0 && (
+        <EdgePropertyPanel
+          selectedEdge={selectedEdge}
+          nodes={allGradleNodes}
+          onEdgeUpdate={handleEdgeUpdate}
+          onEdgeDelete={handleEdgeDelete}
+        />
+      )}
+
+      {/* Show property panel for single node selection or empty state */}
+      {selectedNodes.length <= 1 && !selectedEdge && (
         <PropertyPanel
           selectedNode={selectedNode}
           allNodes={allGradleNodes}

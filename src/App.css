@@ -929,3 +929,168 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* ==============================================
+   Edge Labels & Styles
+   ============================================== */
+
+.edge-label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid;
+  font-size: 0.625rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.edge-label:hover {
+  transform: scale(1.05);
+}
+
+.edge-label.selected {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
+}
+
+.edge-label-text {
+  white-space: nowrap;
+}
+
+/* Connection Error */
+.connection-error {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.75rem 1.25rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #dc2626;
+  font-size: 0.875rem;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  animation: slideUp 0.2s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* ==============================================
+   Edge Property Panel
+   ============================================== */
+
+.edge-panel .edge-type-badge {
+  font-size: 0.625rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.edge-connection-viz {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.edge-node-box {
+  flex: 1;
+  padding: 0.75rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.edge-node-box.source {
+  border-color: #3b82f6;
+  border-width: 2px;
+}
+
+.edge-node-box.target {
+  border-color: #22c55e;
+  border-width: 2px;
+}
+
+.edge-node-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+  margin-bottom: 0.25rem;
+}
+
+.edge-node-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.edge-node-type {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.edge-arrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.edge-arrow-line {
+  width: 32px;
+  border-bottom: 2px solid;
+}
+
+.edge-type-description {
+  margin: 0.75rem 0 0 0;
+  font-size: 0.75rem;
+  color: #64748b;
+  font-style: italic;
+}
+
+.edge-behavior-info {
+  background: #f1f5f9;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+}
+
+.edge-behavior-info ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.edge-behavior-info li {
+  font-size: 0.75rem;
+  color: #475569;
+  margin-bottom: 0.375rem;
+}
+
+.edge-behavior-info li:last-child {
+  margin-bottom: 0;
+}
+
+.edge-panel .delete-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
